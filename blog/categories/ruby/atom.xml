@@ -1,0 +1,186 @@
+<?xml version="1.0" encoding="utf-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom">
+
+  <title><![CDATA[Category: Ruby | Gururuby.ru]]></title>
+  <link href="http://gururuby.ru/blog/categories/ruby/atom.xml" rel="self"/>
+  <link href="http://gururuby.ru/"/>
+  <updated>2015-12-16T22:15:58+03:00</updated>
+  <id>http://gururuby.ru/</id>
+  <author>
+    <name><![CDATA[Gururuby.ru]]></name>
+    <email><![CDATA[i@gururuby.ru]]></email>
+  </author>
+  <generator uri="http://octopress.org/">Octopress</generator>
+
+  
+  <entry>
+    <title type="html"><![CDATA[Что нового в Ruby 2.3?]]></title>
+    <link href="http://gururuby.ru/blog/2015/12/16/whats_new_in_ruby_2_3/"/>
+    <updated>2015-12-16T19:48:43+03:00</updated>
+    <id>http://gururuby.ru/blog/2015/12/16/whats_new_in_ruby_2_3</id>
+    <content type="html"><![CDATA[<p>Совсем скоро выйдет релиз Ruby 2.3.0, а пока доступен пререлиз под номером 1. Давайте посмотрим что новенького появилось.</p>
+
+<!-- more -->
+
+
+<p>Ставим ruby 2.3.0-preview1 через <a href="https://rvm.io/rvm/install/">rvm</a>, либо <a href="https://github.com/rbenv/rbenv#installation">rbenv</a></p>
+
+<pre><code class="sh"># RVM
+rvm install 2.3.0-preview1
+
+# Rbenv
+brew upgrade ruby-build --HEAD
+rbenv install 2.3.0-preview1
+</code></pre>
+
+<h3>~ Safe navigation operator ~</h3>
+
+<p>Появился новый оператор - <code>&amp;.</code>. В Ruby on Rails есть замечательный метод <a href="http://apidock.com/rails/Object/try">try!</a>, так вот этот оператор
+имеет схожую функциональность. Он выполняет проверку на nil до вызова метода у обьекта и возвращает его в случае если
+сам nil, в противном случае вызывается метод после оператора.</p>
+
+<pre><code class="ruby"># Ruby &lt;= 2.2
+puts "User Admin" if user &amp;&amp; user.admin?
+
+# Ruby 2.3
+puts "User Admin" if user&amp;.admin?
+
+# Important
+user = false
+user&amp;.admin? # raise NoMethodError
+</code></pre>
+
+<p>Но будьте внимательны, если <code>user</code> у вас будет например <code>false</code>, то вы получите <code>NoMethodError</code></p>
+
+<h3>~ Frozen string literals ~</h3>
+
+<p>До Ruby 2.2 строки были изменяемые, т.е мы могли взять и сделать что-то подобное <code>str[1] = 'a'</code>. Если нам было необходимо
+запретить изменение строки, то с помощью метода <code>#freeze</code> это прекрасно получалось</p>
+
+<p>Планируется использование <a href="https://bugs.ruby-lang.org/issues/11473">неизменных строк по умолчанию в Ruby 3.0</a>, разработчики хотят увеличить производительность языка,
+уменьшив количество обьектов в памяти. В версии 2.3 можно включить этот режим, для этого в начало
+файла нужно поместить комментарий <code># frozen_string_literal: true</code></p>
+
+<pre><code class="ruby"># frozen_string_literal: true
+
+str = 'cat'
+str[0] = 'b'
+
+# frozen.rb:5:in `[]=': can't modify frozen String (RuntimeError)
+#   from frozen.rb:5:in `&lt;main&gt;'
+</code></pre>
+
+<h3>~ Array#dig и Hash#dig ~</h3>
+
+<p>Небольшие дополнения к стандартным библиотекам, которые позволяют выполнять такие вещи:</p>
+
+<pre><code class="ruby">list = [
+  [2, 3],
+  [5, 7, 9],
+  [ [11, 13], [17, 19] ]
+]
+
+list.dig(1, 2)    #=&gt; 9
+list.dig(2, 1, 0) #=&gt; 17
+list.dig(0, 3)    #=&gt; nil
+list.dig(4, 0)    #=&gt; nil
+</code></pre>
+
+<pre><code class="ruby">dict = {
+  a: { x: 23, y: 29 },
+  b: { x: 31, z: 37 }
+}
+
+dict.dig(:a, :x) #=&gt; 23
+dict.dig(:b, :z) #=&gt; 37
+dict.dig(:b, :y) #=&gt; nil
+dict.dig(:c, :x) #=&gt; nil
+</code></pre>
+
+<h3>~ Did you mean? ~</h3>
+
+<p>Появилась удобная вещь, в виде подсказки, которая предлагает вам варианты правильного вызова метода, если вы вдруг опечатались
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+</pre></td><td class='code'><pre><code class='ruby'><span class='line'><span class="mi">2</span><span class="o">.</span><span class="mi">3</span><span class="o">.</span><span class="mi">0</span><span class="o">-</span><span class="n">preview1</span> <span class="p">:</span><span class="mo">001</span> <span class="o">&gt;</span> <span class="o">&amp;</span><span class="n">ldquo</span><span class="p">;</span><span class="n">string</span><span class="o">&amp;</span><span class="n">rdquo</span><span class="p">;</span><span class="o">.</span><span class="n">downcaze</span><span class="o">&lt;</span><span class="sr">/p&gt;</span>
+</span><span class='line'>
+</span><span class='line'><span class="sr">&lt;p&gt;NoMethodError: undefined method `downcaze&#39; for &amp;ldquo;string&amp;rdquo;:String</span>
+</span><span class='line'><span class="sr">Did you mean?  downcase</span>
+</span><span class='line'><span class="sr">               downcase!</span>
+</span></code></pre></td></tr></table></div></figure></p>
+
+<h3>~ Сравнение Hash ~</h3>
+
+<p>Теперь можно сравнивать hash. Вот таким образом
+<code>ruby
+{ x: 1, y: 2 } &gt;= { x: 1 } #=&gt; true
+{ x: 1, y: 2 } &gt;= { x: 2 } #=&gt; false
+{ x: 1 } &gt;= { x: 1, y: 2 } #=&gt; false
+</code>
+Также можно применять и другие операторы сравнения, более подробно <a href="http://olivierlacan.com/posts/hash-comparison-in-ruby-2-3/">здесь</a></p>
+
+<h3>~ Hash#to_proc ~</h3>
+
+<p>Hash можно преобразовать в proc обьект, причем вызвав у proc ключ из Hash вы получите значение
+```ruby
+h = { foo: 1, bar: 2, baz: 3}
+p = h.to_proc</p>
+
+<p>p.call(:foo)  #=> 1
+p.call(:bar)  #=> 2
+p.call(:quux) #=> nil
+<code>
+Иногда приходится для получения определенных значений из Hash использовать сложную конструкцию, с использованием</code>&amp;```
+это немного упрощается</p>
+
+<pre><code class="ruby">h = { foo: 1, bar: 2, baz: 3}
+
+# bad:
+[:foo, :bar].map { |key| h[key] } #=&gt; [1, 2]
+
+# good:
+[:foo, :bar].map(&amp;h) #=&gt; [1, 2]
+</code></pre>
+
+<h3>~ Hash#fetch_values ~</h3>
+
+<p>Новый метод похож по своей функциональности на <code>Hash#values_at</code>. Он позволяет получить значения по списку ключей.
+Отличие <code>fetch_values</code> в том, что если ключа не найдется, то будет брошен exception <code>KeyError</code>, вместо возвращения <code>nil</code>, как это
+реализовано в <code>values_at</code></p>
+
+<pre><code class="ruby">h = { foo: 1, bar: 2, baz: 3}
+h.fetch_values(:foo, :bar) #=&gt; [1, 2]
+
+h.values_at(:foo, :quux)    #=&gt; [1, nil]
+h.fetch_values(:foo, :quux) #=&gt; raise KeyError
+</code></pre>
+
+<h3>~ Enumerable#grep_v ~</h3>
+
+<p>Если вы знакомы с утилитой grep в linux системах, то в случае если мы применим опцию <code>-v</code> в вызове этой консольной утилиты,
+то в результате выполнения этой команды <code>print "test" | grep t test -v</code> мы ничего не получим на выходе. Эта опция позволяет вывести то что не подошло,
+т.е. она противоположна <code>grep</code></p>
+
+<pre><code class="ruby">list = %w(foo bar baz)
+
+list.grep_v(/ba/)
+#=&gt; ['foo']
+
+list.grep(/ba/)
+#=&gt; ['bar', 'baz']
+</code></pre>
+
+<h3>~ Numeric#positive? и #negative? ~</h3>
+
+<p>Добавилось несколько методов из Rails. Названия интуитивно понятны, можно обойтись без примеров</p>
+
+<h2>Ссылки</h2>
+
+<p><a href="https://www.ruby-lang.org/en/news/2015/11/11/ruby-2-3-0-preview1-released/">https://www.ruby-lang.org/en/news/2015/11/11/ruby-2-3-0-preview1-released/</a></p>
+]]></content>
+  </entry>
+  
+</feed>
