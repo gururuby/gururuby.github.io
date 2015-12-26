@@ -1,6 +1,10 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.sitemaps.org/schemas/sitemap/0.9 http://www.sitemaps.org/schemas/sitemap/0.9/sitemap.xsd" xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url>
+    <loc>http://gururuby.ru/blog/2015/12/18/simple-chat-via-action-cable/</loc>
+    <lastmod>2015-12-18T23:10:01+03:00</lastmod>
+  </url>
+  <url>
     <loc>http://gururuby.ru/blog/2015/12/16/whats_new_in_ruby_2_3/</loc>
     <lastmod>2015-12-16T19:48:43+03:00</lastmod>
   </url>
@@ -15,5 +19,14 @@
   </url>
   <url>
     <loc>http://gururuby.ru/blog/categories/ruby-2-dot-3/</loc>
+  </url>
+  <url>
+    <loc>http://gururuby.ru/blog/categories/ruby-on-rails/</loc>
+  </url>
+  <url>
+    <loc>http://gururuby.ru/blog/categories/actioncable/</loc>
+  </url>
+  <url>
+    <loc>http://gururuby.ru/blog/categories/websocket/</loc>
   </url>
 </urlset>
