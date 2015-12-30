@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom">
+
+  <title><![CDATA[Category: Other | Gururuby.ru | Блог Ruby-разработчика]]></title>
+  <link href="http://gururuby.ru/blog/categories/other/atom.xml" rel="self"/>
+  <link href="http://gururuby.ru/"/>
+  <updated>2015-12-30T17:11:05+03:00</updated>
+  <id>http://gururuby.ru/</id>
+  <author>
+    <name><![CDATA[Gururuby.ru]]></name>
+    <email><![CDATA[i@gururuby.ru]]></email>
+  </author>
+  <generator uri="http://octopress.org/">Octopress</generator>
+
+  
+  <entry>
+    <title type="html"><![CDATA[С наступающим Новым 2016 годом!]]></title>
+    <link href="http://gururuby.ru/blog/2015/12/30/happy_new_year_2016/"/>
+    <updated>2015-12-30T00:00:00+03:00</updated>
+    <id>http://gururuby.ru/blog/2015/12/30/happy_new_year_2016</id>
+    <content type="html"><![CDATA[<p><img src="/images/happy_new_year.jpg">
+Поздравляю всех с наступающим 2016 годом! Добавим снежка, хотя бы виртуального )
+<code>ruby
+ruby -e 'def a;10.times{puts " "*rand(79)+"*"};end;99.times{a;puts " "*34+"Happy New Year 2016";a;sleep 0.1;puts "\e[2J"}'
+</code></p>
+]]></content>
+  </entry>
+  
+</feed>

@@ -1,10 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <feed xmlns="http://www.w3.org/2005/Atom">
 
-  <title><![CDATA[Gururuby.ru]]></title>
+  <title><![CDATA[Gururuby.ru | Блог Ruby-разработчика]]></title>
   <link href="http://gururuby.ru/atom.xml" rel="self"/>
   <link href="http://gururuby.ru/"/>
-  <updated>2015-12-30T16:59:59+03:00</updated>
+  <updated>2015-12-30T17:11:05+03:00</updated>
   <id>http://gururuby.ru/</id>
   <author>
     <name><![CDATA[Gururuby.ru]]></name>
@@ -12,6 +12,21 @@
   </author>
   <generator uri="http://octopress.org/">Octopress</generator>
 
+  
+  <entry>
+    <title type="html"><![CDATA[С наступающим Новым 2016 годом!]]></title>
+    <link href="http://gururuby.ru/blog/2015/12/30/happy_new_year_2016/"/>
+    <updated>2015-12-30T00:00:00+03:00</updated>
+    <id>http://gururuby.ru/blog/2015/12/30/happy_new_year_2016</id>
+    <content type="html"><![CDATA[<p><img src="http://gururuby.ru/images/happy_new_year.jpg">
+Поздравляю всех с наступающим 2016 годом! Добавим снежка, хотя бы виртуального )</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class='ruby'><span class='line'><span class="n">ruby</span> <span class="o">-</span><span class="n">e</span> <span class="s1">&#39;def a;10.times{puts &quot; &quot;*rand(79)+&quot;*&quot;};end;99.times{a;puts &quot; &quot;*34+&quot;Happy New Year 2016&quot;;a;sleep 0.1;puts &quot;\e[2J&quot;}&#39;</span>
+</span></code></pre></td></tr></table></div></figure>
+
+]]></content>
+  </entry>
   
   <entry>
     <title type="html"><![CDATA[Простой чат с помощью ActionCable]]></title>

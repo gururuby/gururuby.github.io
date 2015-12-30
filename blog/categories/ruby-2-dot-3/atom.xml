@@ -1,10 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <feed xmlns="http://www.w3.org/2005/Atom">
 
-  <title><![CDATA[Category: ruby-2.3 | Gururuby.ru]]></title>
+  <title><![CDATA[Category: ruby-2.3 | Gururuby.ru | Блог Ruby-разработчика]]></title>
   <link href="http://gururuby.ru/blog/categories/ruby-2-dot-3/atom.xml" rel="self"/>
   <link href="http://gururuby.ru/"/>
-  <updated>2015-12-30T16:59:59+03:00</updated>
+  <updated>2015-12-30T17:11:05+03:00</updated>
   <id>http://gururuby.ru/</id>
   <author>
     <name><![CDATA[Gururuby.ru]]></name>
