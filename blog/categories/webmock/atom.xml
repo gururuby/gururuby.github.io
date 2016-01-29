@@ -1,0 +1,278 @@
+<?xml version="1.0" encoding="utf-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom">
+
+  <title><![CDATA[Category: Webmock | Gururuby.ru | Блог Ruby-разработчика]]></title>
+  <link href="http://gururuby.ru/blog/categories/webmock/atom.xml" rel="self"/>
+  <link href="http://gururuby.ru/"/>
+  <updated>2016-01-30T00:21:56+03:00</updated>
+  <id>http://gururuby.ru/</id>
+  <author>
+    <name><![CDATA[Gururuby.ru]]></name>
+    <email><![CDATA[i@gururuby.ru]]></email>
+  </author>
+  <generator uri="http://octopress.org/">Octopress</generator>
+
+  
+  <entry>
+    <title type="html"><![CDATA[Тестируем внешние сервисы легко!]]></title>
+    <link href="http://gururuby.ru/blog/2016/01/29/stubbing-external-services/"/>
+    <updated>2016-01-29T22:40:46+03:00</updated>
+    <id>http://gururuby.ru/blog/2016/01/29/stubbing-external-services</id>
+    <content type="html"><![CDATA[<p><img src="/images/vcr.jpg">
+В любом крупном проекте, так или иначе, но приходится сталкиваться с использованием внешних сервисов.
+Это может быть шлюз для отправки SMS, или сервис для получения курсов валют. В этой статье я опишу
+как тестировать их легко и приятно.</p>
+
+<!-- more -->
+
+
+<p>API социальных сетей, платежных систем, и прочее прочее. Сейчас редко крупный проект обходится без привязки к внешним сервисам.
+Тестировать код, связанный со внешними сервисами не всегда легко, это издержки сети, медленное соединение. Лучше
+изолировать эти тесты с помощью заглушек.</p>
+
+<h3>Имитация сервиса на примере конвертера валют</h3>
+
+<p>Допустим у нас есть некая система, которая использует внешний сервис <a href="http://fixer.io/">Fixer.io</a> для получения курсов валют, и преобразования
+некой суммы в ту валюту, которую укажет клиент.</p>
+
+<pre><code class="ruby converter.rb">class Converter
+  def initialize(amount, source = "RUB", target = "USD")
+    @amount = amount
+    @target = target
+    @source = source
+  end
+
+  def convert!
+    body = get_exchange_rate_from_api
+    rate = extract_exchange_rate(body)
+    @amount * rate
+  end
+
+  private
+
+  def extract_exchange_rate(body)
+    JSON.parse(body)["rates"][@target]
+  end
+
+  def get_exchange_rate_from_api
+    url = URI(api_url)
+    Net::HTTP.get(url)
+  end
+
+  def api_url
+    "http://api.fixer.io/latest?symbols=#{@target}&amp;base=#{@source}"
+  end
+end
+</code></pre>
+
+<p>Наш код прекрасно работает на production сервере. Но мы не хотим, чтобы при тестировании приложения, отправлялись реальные
+запросы к сервису. Давайте посмотрим какие инструменты наиболее популярны для решения этой задачи.</p>
+
+<h3>Webmock</h3>
+
+<p>Webmock это библиотека для создания и использования заглушек HTTP запросов. Это довольно простой и удобный инструмент, и подходит
+для использования в связке с Rspec, Minitest, Test::Unit</p>
+
+<p>Настройка Webmock проста. На странице проекта есть <a href="https://github.com/bblimke/webmock">инструкция по установке</a>. Она сводится к установке gem, и прописыванию библиотеки в
+<code>spec_helper.rb</code> или в <code>test_helper.rb</code></p>
+
+<pre><code class="ruby test_helper.rb">require 'webmock/minitest'
+</code></pre>
+
+<pre><code class="ruby spec_helper.rb">require 'webmock/rspec'
+</code></pre>
+
+<p>Давайте посмотрим как будет выглядеть тест на Rspec, написанный с использованием Webmock</p>
+
+<pre><code class="ruby converter_spec.rb">require 'rails_helper'
+
+Rspec.describe Converter do
+
+ before do
+     stub_request(:get, "http://api.fixer.io/latest?symbols=USD&amp;base=EUR").
+          to_return(:body =&gt; %Q(
+    {
+    "base": "EUR",
+    "date": "2016-01-29",
+    "rates": {
+    "USD": 2.0
+    }
+    }
+    ))
+ end
+
+ it 'should convert eur to usd' do
+    expect(Converter.new(2, "EUR", "USD").convert!).to_eq(4)
+ end
+
+end 
+</code></pre>
+
+<p>Все довольно просто. Теперь когда наш код в тесте будет обращаться по url <code>http://api.fixer.io/latest?symbols=USD&amp;base=EUR</code>
+, вызов сервиса будет заглушаться, и вместо реального запроса мы получим то, что указали в <code>to_return</code>.</p>
+
+<p>Webmock позволяет легко создавать заглушки для сервиса, но есть и подводные камни. Если вдруг ответ реального сервера поменялся, например
+поменялось API, то мы не сможем отследить это изменение через тест.</p>
+
+<h3>VCR</h3>
+
+<p>Решить проблему, обозначенную выше помогает - <a href="https://github.com/vcr/vcr">VCR</a>. Его отличие от Webmock в том, что VCR
+записывает реальный HTTP-ответ от сервиса и использует его потом изолированно в тестах. Запись производится в YAML файл.</p>
+
+<p>Настройка и установка также простая. Установить gem, и добавить конфигурационные строчки в <code>test_helper.rb</code> или <code>spec_helper.rb</code></p>
+
+<pre><code class="ruby spec_helper.rb">require 'vcr'
+
+VCR.configure do |config|
+  # Указываем где будем хранить наши кассеты )
+  config.cassette_library_dir = "fixtures/vcr_cassettes"
+  # Интегрируемся с webmock 
+  config.hook_into :webmock # or :fakeweb
+end
+</code></pre>
+
+<p>Вот пример мини-теста с использованием VCR</p>
+
+<pre><code class="ruby converter_test.rb">class ConverterTest &lt; Minitest::Test
+  def it_converts_eur_to_usd
+    VCR.use_cassette("eur_to_usd_conversion") do
+      assert_equals 4, Converter.convert!(4.3932, "EUR", "USD")
+    end
+  end
+end
+</code></pre>
+
+<p>Во время запуска этого теста, будет послан реальный запрос к сервису, а ответ записан в yml-файл c названием, которое было указано
+как аргумент в <code>VCR.use_cassette</code>.</p>
+
+<p>Вот так примерно будет выглядеть ответ, записанный в файл:</p>
+
+<pre><code class="yaml test/fixtures/vcr_cassettes/eur_to_usd_conversion.yml">---
+http_interactions:
+- request:
+    method: get
+    uri: http://api.fixer.io/latest?base=EUR&amp;symbols=USD
+    body:
+      encoding: US-ASCII
+      string: ''
+    headers:
+      Accept-Encoding:
+      - gzip;q=1.0,deflate;q=0.6,identity;q=0.3
+      Accept:
+      - "*/*"
+      User-Agent:
+      - Ruby
+      Host:
+      - api.fixer.io
+  response:
+    status:
+      code: 200
+      message: OK
+    headers:
+      Server:
+      - nginx/1.4.6 (Ubuntu)
+      Date:
+      - Fri, 29 Jan 2016 23:00:20 GMT
+      Content-Type:
+      - application/json
+      Content-Length:
+      - '56'
+      Connection:
+      - keep-alive
+      Status:
+      - 200 OK
+      Last-Modified:
+      - Wed, 28 Jan 2016 00:00:00 GMT
+      X-Content-Type-Options:
+      - nosniff
+    body:
+      encoding: UTF-8
+      string: '{"base":"EUR","date":"2016-01-29","rates":{"USD":1.099}}'
+    http_version:
+  recorded_at: Fri, 29 Jan 2016 23:00:20 GMT
+recorded_with: VCR 3.0.0
+</code></pre>
+
+<p>При последующем обращении к сервису, будет использоваться этот запрос, который записан в файл. Это довольно удобно, особенно
+когда нужно использовать один и тот же запрос в разных местах.</p>
+
+<h3>Внедрение зависимости (Dependency Injection)</h3>
+
+<p>Еще один из способов, состоит во внедрении паттерна проектирования <a href="https://ru.wikipedia.org/wiki/%D0%92%D0%BD%D0%B5%D0%B4%D1%80%D0%B5%D0%BD%D0%B8%D0%B5_%D0%B7%D0%B0%D0%B2%D0%B8%D1%81%D0%B8%D0%BC%D0%BE%D1%81%D1%82%D0%B8">Dependency Injection</a>.
+Посмотрим на примере нашего конвертера, как можно использовать его.</p>
+
+<pre><code class="ruby converter.rb">class Converter
+  def initialize(amount, source = "EUR", target = "USD", api = FixerAPI)
+    @amount = amount
+    @target = target
+    @source = source
+    @api    = api
+  end
+
+  def convert!
+    rate = @api.get_exhange_rate(source: @source, target: @target)
+    @amount * rate
+  end
+end
+</code></pre>
+
+<p>Итак, мы внедрили в конструктор класса Converter, FixerAPI класс, который представляет собой обертку для работы с сервисом Fixer.
+Вот так выглядит наш FixerAPI класс</p>
+
+<pre><code class="ruby fixer_api.rb">class FixerAPI
+  def self.get_exchange_rate(source: source, target: target)
+    new.get_exhange_rate(source: source, target: target)
+  end
+
+  def get_exchange_rate(source: source, target: target)
+    url = URI(api_url(source, target))
+    body = Net::HTTP.get(url)
+    JSON.parse(body)["rates"][target]
+  end
+
+  private
+
+  def api_url(source, target)
+    "http://api.fixer.io/latest?symbols=#{target}&amp;base=#{source}"
+  end
+end
+</code></pre>
+
+<p>Мы вынесли работу с внешним сервисом в отдельный класс, и можем его включать в любом месте где захотим. И в этом состоит суть
+внедрения зависимости. Так как код стал изолирован, то и тестировать его можно, заменив например FixerAPI каким-нибудь FakeAPI.</p>
+
+<pre><code class="ruby converter_test.rb">class FakeAPI
+  def self.get_exchange_rate(source: source, target: target)
+    2
+  end
+end
+
+class ConverterTest &lt; Minitest::Test
+  def it_converts_eur_to_usd
+    assert_equals 4, Converter.convert!(2, "EUR", "USD", FakeAPI)
+  end
+end
+</code></pre>
+
+<h3>Написать свой тестовый сервис</h3>
+
+<p>Я не буду долго рассматривать этот способ, так как считаю его очень сложным. Но он имеет место быть.
+Если коротко, то мы можем написать тестовый сервер, который будет работать например на <a href="https://nathanhoad.net/how-to-return-json-from-sinatra">Sinatra</a>. Он будет возвращать нам нужные данные.
+Их мы и будем использовать в наших тестах.</p>
+
+<pre><code class="ruby fixer_server.rb">require 'sinatra'
+
+get '/latest' do
+  content_type :json
+  { base: "EUR", date: "2015-12-15", rates: { usd: 1.099 } }.to_json
+end
+</code></pre>
+
+<h3>Заключение</h3>
+
+<p>Проблема вполне решаема, разными способами, но лично я остановился бы на VCR. Но конечно нужно смотреть еще
+на целесообразность использования того или инструмента для облегчения тестирования внешних сервисов.</p>
+]]></content>
+  </entry>
+  
+</feed>

@@ -4,7 +4,7 @@
   <title><![CDATA[Gururuby.ru | Блог Ruby-разработчика]]></title>
   <link href="http://gururuby.ru/atom.xml" rel="self"/>
   <link href="http://gururuby.ru/"/>
-  <updated>2015-12-30T17:13:03+03:00</updated>
+  <updated>2016-01-30T00:21:56+03:00</updated>
   <id>http://gururuby.ru/</id>
   <author>
     <name><![CDATA[Gururuby.ru]]></name>
@@ -12,6 +12,439 @@
   </author>
   <generator uri="http://octopress.org/">Octopress</generator>
 
+  
+  <entry>
+    <title type="html"><![CDATA[Тестируем внешние сервисы легко!]]></title>
+    <link href="http://gururuby.ru/blog/2016/01/29/stubbing-external-services/"/>
+    <updated>2016-01-29T22:40:46+03:00</updated>
+    <id>http://gururuby.ru/blog/2016/01/29/stubbing-external-services</id>
+    <content type="html"><![CDATA[<p><img src="http://gururuby.ru/images/vcr.jpg">
+В любом крупном проекте, так или иначе, но приходится сталкиваться с использованием внешних сервисов.
+Это может быть шлюз для отправки SMS, или сервис для получения курсов валют. В этой статье я опишу
+как тестировать их легко и приятно.</p>
+
+<!-- more -->
+
+
+<p>API социальных сетей, платежных систем, и прочее прочее. Сейчас редко крупный проект обходится без привязки к внешним сервисам.
+Тестировать код, связанный со внешними сервисами не всегда легко, это издержки сети, медленное соединение. Лучше
+изолировать эти тесты с помощью заглушек.</p>
+
+<h3>Имитация сервиса на примере конвертера валют</h3>
+
+<p>Допустим у нас есть некая система, которая использует внешний сервис <a href="http://fixer.io/">Fixer.io</a> для получения курсов валют, и преобразования
+некой суммы в ту валюту, которую укажет клиент.</p>
+
+<figure class='code'><figcaption><span>converter.rb</span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+<span class='line-number'>23</span>
+<span class='line-number'>24</span>
+<span class='line-number'>25</span>
+<span class='line-number'>26</span>
+<span class='line-number'>27</span>
+<span class='line-number'>28</span>
+</pre></td><td class='code'><pre><code class='ruby'><span class='line'><span class="k">class</span> <span class="nc">Converter</span>
+</span><span class='line'>  <span class="k">def</span> <span class="nf">initialize</span><span class="p">(</span><span class="n">amount</span><span class="p">,</span> <span class="n">source</span> <span class="o">=</span> <span class="s2">&quot;RUB&quot;</span><span class="p">,</span> <span class="n">target</span> <span class="o">=</span> <span class="s2">&quot;USD&quot;</span><span class="p">)</span>
+</span><span class='line'>    <span class="vi">@amount</span> <span class="o">=</span> <span class="n">amount</span>
+</span><span class='line'>    <span class="vi">@target</span> <span class="o">=</span> <span class="n">target</span>
+</span><span class='line'>    <span class="vi">@source</span> <span class="o">=</span> <span class="n">source</span>
+</span><span class='line'>  <span class="k">end</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="k">def</span> <span class="nf">convert!</span>
+</span><span class='line'>    <span class="n">body</span> <span class="o">=</span> <span class="n">get_exchange_rate_from_api</span>
+</span><span class='line'>    <span class="n">rate</span> <span class="o">=</span> <span class="n">extract_exchange_rate</span><span class="p">(</span><span class="n">body</span><span class="p">)</span>
+</span><span class='line'>    <span class="vi">@amount</span> <span class="o">*</span> <span class="n">rate</span>
+</span><span class='line'>  <span class="k">end</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="kp">private</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="k">def</span> <span class="nf">extract_exchange_rate</span><span class="p">(</span><span class="n">body</span><span class="p">)</span>
+</span><span class='line'>    <span class="no">JSON</span><span class="o">.</span><span class="n">parse</span><span class="p">(</span><span class="n">body</span><span class="p">)</span><span class="o">[</span><span class="s2">&quot;rates&quot;</span><span class="o">][</span><span class="vi">@target</span><span class="o">]</span>
+</span><span class='line'>  <span class="k">end</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="k">def</span> <span class="nf">get_exchange_rate_from_api</span>
+</span><span class='line'>    <span class="n">url</span> <span class="o">=</span> <span class="no">URI</span><span class="p">(</span><span class="n">api_url</span><span class="p">)</span>
+</span><span class='line'>    <span class="no">Net</span><span class="o">::</span><span class="no">HTTP</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">url</span><span class="p">)</span>
+</span><span class='line'>  <span class="k">end</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="k">def</span> <span class="nf">api_url</span>
+</span><span class='line'>    <span class="s2">&quot;http://api.fixer.io/latest?symbols=</span><span class="si">#{</span><span class="vi">@target</span><span class="si">}</span><span class="s2">&amp;base=</span><span class="si">#{</span><span class="vi">@source</span><span class="si">}</span><span class="s2">&quot;</span>
+</span><span class='line'>  <span class="k">end</span>
+</span><span class='line'><span class="k">end</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>Наш код прекрасно работает на production сервере. Но мы не хотим, чтобы при тестировании приложения, отправлялись реальные
+запросы к сервису. Давайте посмотрим какие инструменты наиболее популярны для решения этой задачи.</p>
+
+<h3>Webmock</h3>
+
+<p>Webmock это библиотека для создания и использования заглушек HTTP запросов. Это довольно простой и удобный инструмент, и подходит
+для использования в связке с Rspec, Minitest, Test::Unit</p>
+
+<p>Настройка Webmock проста. На странице проекта есть <a href="https://github.com/bblimke/webmock">инструкция по установке</a>. Она сводится к установке gem, и прописыванию библиотеки в
+<code>spec_helper.rb</code> или в <code>test_helper.rb</code></p>
+
+<figure class='code'><figcaption><span>test_helper.rb</span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class='ruby'><span class='line'><span class="nb">require</span> <span class="s1">&#39;webmock/minitest&#39;</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+
+
+<figure class='code'><figcaption><span>spec_helper.rb</span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class='ruby'><span class='line'><span class="nb">require</span> <span class="s1">&#39;webmock/rspec&#39;</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>Давайте посмотрим как будет выглядеть тест на Rspec, написанный с использованием Webmock</p>
+
+<figure class='code'><figcaption><span>converter_spec.rb</span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+</pre></td><td class='code'><pre><code class='ruby'><span class='line'><span class="nb">require</span> <span class="s1">&#39;rails_helper&#39;</span>
+</span><span class='line'>
+</span><span class='line'><span class="no">Rspec</span><span class="o">.</span><span class="n">describe</span> <span class="no">Converter</span> <span class="k">do</span>
+</span><span class='line'>
+</span><span class='line'> <span class="n">before</span> <span class="k">do</span>
+</span><span class='line'>     <span class="n">stub_request</span><span class="p">(</span><span class="ss">:get</span><span class="p">,</span> <span class="s2">&quot;http://api.fixer.io/latest?symbols=USD&amp;base=EUR&quot;</span><span class="p">)</span><span class="o">.</span>
+</span><span class='line'>          <span class="n">to_return</span><span class="p">(</span><span class="ss">:body</span> <span class="o">=&gt;</span> <span class="sx">%Q(</span>
+</span><span class='line'><span class="sx">    {</span>
+</span><span class='line'><span class="sx">    &quot;base&quot;: &quot;EUR&quot;,</span>
+</span><span class='line'><span class="sx">    &quot;date&quot;: &quot;2016-01-29&quot;,</span>
+</span><span class='line'><span class="sx">    &quot;rates&quot;: {</span>
+</span><span class='line'><span class="sx">    &quot;USD&quot;: 2.0</span>
+</span><span class='line'><span class="sx">    }</span>
+</span><span class='line'><span class="sx">    }</span>
+</span><span class='line'><span class="sx">    )</span><span class="p">)</span>
+</span><span class='line'> <span class="k">end</span>
+</span><span class='line'>
+</span><span class='line'> <span class="n">it</span> <span class="s1">&#39;should convert eur to usd&#39;</span> <span class="k">do</span>
+</span><span class='line'>    <span class="n">expect</span><span class="p">(</span><span class="no">Converter</span><span class="o">.</span><span class="n">new</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="s2">&quot;EUR&quot;</span><span class="p">,</span> <span class="s2">&quot;USD&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">convert!</span><span class="p">)</span><span class="o">.</span><span class="n">to_eq</span><span class="p">(</span><span class="mi">4</span><span class="p">)</span>
+</span><span class='line'> <span class="k">end</span>
+</span><span class='line'>
+</span><span class='line'><span class="k">end</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>Все довольно просто. Теперь когда наш код в тесте будет обращаться по url <code>http://api.fixer.io/latest?symbols=USD&amp;base=EUR</code>
+, вызов сервиса будет заглушаться, и вместо реального запроса мы получим то, что указали в <code>to_return</code>.</p>
+
+<p>Webmock позволяет легко создавать заглушки для сервиса, но есть и подводные камни. Если вдруг ответ реального сервера поменялся, например
+поменялось API, то мы не сможем отследить это изменение через тест.</p>
+
+<h3>VCR</h3>
+
+<p>Решить проблему, обозначенную выше помогает - <a href="https://github.com/vcr/vcr">VCR</a>. Его отличие от Webmock в том, что VCR
+записывает реальный HTTP-ответ от сервиса и использует его потом изолированно в тестах. Запись производится в YAML файл.</p>
+
+<p>Настройка и установка также простая. Установить gem, и добавить конфигурационные строчки в <code>test_helper.rb</code> или <code>spec_helper.rb</code></p>
+
+<figure class='code'><figcaption><span>spec_helper.rb</span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+</pre></td><td class='code'><pre><code class='ruby'><span class='line'><span class="nb">require</span> <span class="s1">&#39;vcr&#39;</span>
+</span><span class='line'>
+</span><span class='line'><span class="no">VCR</span><span class="o">.</span><span class="n">configure</span> <span class="k">do</span> <span class="o">|</span><span class="n">config</span><span class="o">|</span>
+</span><span class='line'>  <span class="c1"># Указываем где будем хранить наши кассеты )</span>
+</span><span class='line'>  <span class="n">config</span><span class="o">.</span><span class="n">cassette_library_dir</span> <span class="o">=</span> <span class="s2">&quot;fixtures/vcr_cassettes&quot;</span>
+</span><span class='line'>  <span class="c1"># Интегрируемся с webmock </span>
+</span><span class='line'>  <span class="n">config</span><span class="o">.</span><span class="n">hook_into</span> <span class="ss">:webmock</span> <span class="c1"># or :fakeweb</span>
+</span><span class='line'><span class="k">end</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>Вот пример мини-теста с использованием VCR</p>
+
+<figure class='code'><figcaption><span>converter_test.rb</span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+</pre></td><td class='code'><pre><code class='ruby'><span class='line'><span class="k">class</span> <span class="nc">ConverterTest</span> <span class="o">&lt;</span> <span class="no">Minitest</span><span class="o">::</span><span class="no">Test</span>
+</span><span class='line'>  <span class="k">def</span> <span class="nf">it_converts_eur_to_usd</span>
+</span><span class='line'>    <span class="no">VCR</span><span class="o">.</span><span class="n">use_cassette</span><span class="p">(</span><span class="s2">&quot;eur_to_usd_conversion&quot;</span><span class="p">)</span> <span class="k">do</span>
+</span><span class='line'>      <span class="n">assert_equals</span> <span class="mi">4</span><span class="p">,</span> <span class="no">Converter</span><span class="o">.</span><span class="n">convert!</span><span class="p">(</span><span class="mi">4</span><span class="o">.</span><span class="mi">3932</span><span class="p">,</span> <span class="s2">&quot;EUR&quot;</span><span class="p">,</span> <span class="s2">&quot;USD&quot;</span><span class="p">)</span>
+</span><span class='line'>    <span class="k">end</span>
+</span><span class='line'>  <span class="k">end</span>
+</span><span class='line'><span class="k">end</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>Во время запуска этого теста, будет послан реальный запрос к сервису, а ответ записан в yml-файл c названием, которое было указано
+как аргумент в <code>VCR.use_cassette</code>.</p>
+
+<p>Вот так примерно будет выглядеть ответ, записанный в файл:</p>
+
+<figure class='code'><figcaption><span>test/fixtures/vcr_cassettes/eur_to_usd_conversion.yml</span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+<span class='line-number'>23</span>
+<span class='line-number'>24</span>
+<span class='line-number'>25</span>
+<span class='line-number'>26</span>
+<span class='line-number'>27</span>
+<span class='line-number'>28</span>
+<span class='line-number'>29</span>
+<span class='line-number'>30</span>
+<span class='line-number'>31</span>
+<span class='line-number'>32</span>
+<span class='line-number'>33</span>
+<span class='line-number'>34</span>
+<span class='line-number'>35</span>
+<span class='line-number'>36</span>
+<span class='line-number'>37</span>
+<span class='line-number'>38</span>
+<span class='line-number'>39</span>
+<span class='line-number'>40</span>
+<span class='line-number'>41</span>
+<span class='line-number'>42</span>
+<span class='line-number'>43</span>
+<span class='line-number'>44</span>
+</pre></td><td class='code'><pre><code class='yaml'><span class='line'><span class="nn">---</span>
+</span><span class='line'><span class="l-Scalar-Plain">http_interactions</span><span class="p-Indicator">:</span>
+</span><span class='line'><span class="p-Indicator">-</span> <span class="l-Scalar-Plain">request</span><span class="p-Indicator">:</span>
+</span><span class='line'>    <span class="l-Scalar-Plain">method</span><span class="p-Indicator">:</span> <span class="l-Scalar-Plain">get</span>
+</span><span class='line'>    <span class="l-Scalar-Plain">uri</span><span class="p-Indicator">:</span> <span class="l-Scalar-Plain">http://api.fixer.io/latest?base=EUR&amp;symbols=USD</span>
+</span><span class='line'>    <span class="l-Scalar-Plain">body</span><span class="p-Indicator">:</span>
+</span><span class='line'>      <span class="l-Scalar-Plain">encoding</span><span class="p-Indicator">:</span> <span class="l-Scalar-Plain">US-ASCII</span>
+</span><span class='line'>      <span class="l-Scalar-Plain">string</span><span class="p-Indicator">:</span> <span class="s">&#39;&#39;</span>
+</span><span class='line'>    <span class="l-Scalar-Plain">headers</span><span class="p-Indicator">:</span>
+</span><span class='line'>      <span class="l-Scalar-Plain">Accept-Encoding</span><span class="p-Indicator">:</span>
+</span><span class='line'>      <span class="p-Indicator">-</span> <span class="l-Scalar-Plain">gzip;q=1.0,deflate;q=0.6,identity;q=0.3</span>
+</span><span class='line'>      <span class="l-Scalar-Plain">Accept</span><span class="p-Indicator">:</span>
+</span><span class='line'>      <span class="p-Indicator">-</span> <span class="s">&quot;*/*&quot;</span>
+</span><span class='line'>      <span class="l-Scalar-Plain">User-Agent</span><span class="p-Indicator">:</span>
+</span><span class='line'>      <span class="p-Indicator">-</span> <span class="l-Scalar-Plain">Ruby</span>
+</span><span class='line'>      <span class="l-Scalar-Plain">Host</span><span class="p-Indicator">:</span>
+</span><span class='line'>      <span class="p-Indicator">-</span> <span class="l-Scalar-Plain">api.fixer.io</span>
+</span><span class='line'>  <span class="l-Scalar-Plain">response</span><span class="p-Indicator">:</span>
+</span><span class='line'>    <span class="l-Scalar-Plain">status</span><span class="p-Indicator">:</span>
+</span><span class='line'>      <span class="l-Scalar-Plain">code</span><span class="p-Indicator">:</span> <span class="l-Scalar-Plain">200</span>
+</span><span class='line'>      <span class="l-Scalar-Plain">message</span><span class="p-Indicator">:</span> <span class="l-Scalar-Plain">OK</span>
+</span><span class='line'>    <span class="l-Scalar-Plain">headers</span><span class="p-Indicator">:</span>
+</span><span class='line'>      <span class="l-Scalar-Plain">Server</span><span class="p-Indicator">:</span>
+</span><span class='line'>      <span class="p-Indicator">-</span> <span class="l-Scalar-Plain">nginx/1.4.6 (Ubuntu)</span>
+</span><span class='line'>      <span class="l-Scalar-Plain">Date</span><span class="p-Indicator">:</span>
+</span><span class='line'>      <span class="p-Indicator">-</span> <span class="l-Scalar-Plain">Fri, 29 Jan 2016 23:00:20 GMT</span>
+</span><span class='line'>      <span class="l-Scalar-Plain">Content-Type</span><span class="p-Indicator">:</span>
+</span><span class='line'>      <span class="p-Indicator">-</span> <span class="l-Scalar-Plain">application/json</span>
+</span><span class='line'>      <span class="l-Scalar-Plain">Content-Length</span><span class="p-Indicator">:</span>
+</span><span class='line'>      <span class="p-Indicator">-</span> <span class="s">&#39;56&#39;</span>
+</span><span class='line'>      <span class="l-Scalar-Plain">Connection</span><span class="p-Indicator">:</span>
+</span><span class='line'>      <span class="p-Indicator">-</span> <span class="l-Scalar-Plain">keep-alive</span>
+</span><span class='line'>      <span class="l-Scalar-Plain">Status</span><span class="p-Indicator">:</span>
+</span><span class='line'>      <span class="p-Indicator">-</span> <span class="l-Scalar-Plain">200 OK</span>
+</span><span class='line'>      <span class="l-Scalar-Plain">Last-Modified</span><span class="p-Indicator">:</span>
+</span><span class='line'>      <span class="p-Indicator">-</span> <span class="l-Scalar-Plain">Wed, 28 Jan 2016 00:00:00 GMT</span>
+</span><span class='line'>      <span class="l-Scalar-Plain">X-Content-Type-Options</span><span class="p-Indicator">:</span>
+</span><span class='line'>      <span class="p-Indicator">-</span> <span class="l-Scalar-Plain">nosniff</span>
+</span><span class='line'>    <span class="l-Scalar-Plain">body</span><span class="p-Indicator">:</span>
+</span><span class='line'>      <span class="l-Scalar-Plain">encoding</span><span class="p-Indicator">:</span> <span class="l-Scalar-Plain">UTF-8</span>
+</span><span class='line'>      <span class="l-Scalar-Plain">string</span><span class="p-Indicator">:</span> <span class="s">&#39;{&quot;base&quot;:&quot;EUR&quot;,&quot;date&quot;:&quot;2016-01-29&quot;,&quot;rates&quot;:{&quot;USD&quot;:1.099}}&#39;</span>
+</span><span class='line'>    <span class="l-Scalar-Plain">http_version</span><span class="p-Indicator">:</span>
+</span><span class='line'>  <span class="l-Scalar-Plain">recorded_at</span><span class="p-Indicator">:</span> <span class="l-Scalar-Plain">Fri, 29 Jan 2016 23:00:20 GMT</span>
+</span><span class='line'><span class="l-Scalar-Plain">recorded_with</span><span class="p-Indicator">:</span> <span class="l-Scalar-Plain">VCR 3.0.0</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>При последующем обращении к сервису, будет использоваться этот запрос, который записан в файл. Это довольно удобно, особенно
+когда нужно использовать один и тот же запрос в разных местах.</p>
+
+<h3>Внедрение зависимости (Dependency Injection)</h3>
+
+<p>Еще один из способов, состоит во внедрении паттерна проектирования <a href="https://ru.wikipedia.org/wiki/%D0%92%D0%BD%D0%B5%D0%B4%D1%80%D0%B5%D0%BD%D0%B8%D0%B5_%D0%B7%D0%B0%D0%B2%D0%B8%D1%81%D0%B8%D0%BC%D0%BE%D1%81%D1%82%D0%B8">Dependency Injection</a>.
+Посмотрим на примере нашего конвертера, как можно использовать его.</p>
+
+<figure class='code'><figcaption><span>converter.rb</span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+</pre></td><td class='code'><pre><code class='ruby'><span class='line'><span class="k">class</span> <span class="nc">Converter</span>
+</span><span class='line'>  <span class="k">def</span> <span class="nf">initialize</span><span class="p">(</span><span class="n">amount</span><span class="p">,</span> <span class="n">source</span> <span class="o">=</span> <span class="s2">&quot;EUR&quot;</span><span class="p">,</span> <span class="n">target</span> <span class="o">=</span> <span class="s2">&quot;USD&quot;</span><span class="p">,</span> <span class="n">api</span> <span class="o">=</span> <span class="no">FixerAPI</span><span class="p">)</span>
+</span><span class='line'>    <span class="vi">@amount</span> <span class="o">=</span> <span class="n">amount</span>
+</span><span class='line'>    <span class="vi">@target</span> <span class="o">=</span> <span class="n">target</span>
+</span><span class='line'>    <span class="vi">@source</span> <span class="o">=</span> <span class="n">source</span>
+</span><span class='line'>    <span class="vi">@api</span>    <span class="o">=</span> <span class="n">api</span>
+</span><span class='line'>  <span class="k">end</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="k">def</span> <span class="nf">convert!</span>
+</span><span class='line'>    <span class="n">rate</span> <span class="o">=</span> <span class="vi">@api</span><span class="o">.</span><span class="n">get_exhange_rate</span><span class="p">(</span><span class="ss">source</span><span class="p">:</span> <span class="vi">@source</span><span class="p">,</span> <span class="ss">target</span><span class="p">:</span> <span class="vi">@target</span><span class="p">)</span>
+</span><span class='line'>    <span class="vi">@amount</span> <span class="o">*</span> <span class="n">rate</span>
+</span><span class='line'>  <span class="k">end</span>
+</span><span class='line'><span class="k">end</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>Итак, мы внедрили в конструктор класса Converter, FixerAPI класс, который представляет собой обертку для работы с сервисом Fixer.
+Вот так выглядит наш FixerAPI класс</p>
+
+<figure class='code'><figcaption><span>fixer_api.rb</span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+</pre></td><td class='code'><pre><code class='ruby'><span class='line'><span class="k">class</span> <span class="nc">FixerAPI</span>
+</span><span class='line'>  <span class="k">def</span> <span class="nc">self</span><span class="o">.</span><span class="nf">get_exchange_rate</span><span class="p">(</span><span class="ss">source</span><span class="p">:</span> <span class="n">source</span><span class="p">,</span> <span class="ss">target</span><span class="p">:</span> <span class="n">target</span><span class="p">)</span>
+</span><span class='line'>    <span class="kp">new</span><span class="o">.</span><span class="n">get_exhange_rate</span><span class="p">(</span><span class="ss">source</span><span class="p">:</span> <span class="n">source</span><span class="p">,</span> <span class="ss">target</span><span class="p">:</span> <span class="n">target</span><span class="p">)</span>
+</span><span class='line'>  <span class="k">end</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="k">def</span> <span class="nf">get_exchange_rate</span><span class="p">(</span><span class="ss">source</span><span class="p">:</span> <span class="n">source</span><span class="p">,</span> <span class="ss">target</span><span class="p">:</span> <span class="n">target</span><span class="p">)</span>
+</span><span class='line'>    <span class="n">url</span> <span class="o">=</span> <span class="no">URI</span><span class="p">(</span><span class="n">api_url</span><span class="p">(</span><span class="n">source</span><span class="p">,</span> <span class="n">target</span><span class="p">))</span>
+</span><span class='line'>    <span class="n">body</span> <span class="o">=</span> <span class="no">Net</span><span class="o">::</span><span class="no">HTTP</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">url</span><span class="p">)</span>
+</span><span class='line'>    <span class="no">JSON</span><span class="o">.</span><span class="n">parse</span><span class="p">(</span><span class="n">body</span><span class="p">)</span><span class="o">[</span><span class="s2">&quot;rates&quot;</span><span class="o">][</span><span class="n">target</span><span class="o">]</span>
+</span><span class='line'>  <span class="k">end</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="kp">private</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="k">def</span> <span class="nf">api_url</span><span class="p">(</span><span class="n">source</span><span class="p">,</span> <span class="n">target</span><span class="p">)</span>
+</span><span class='line'>    <span class="s2">&quot;http://api.fixer.io/latest?symbols=</span><span class="si">#{</span><span class="n">target</span><span class="si">}</span><span class="s2">&amp;base=</span><span class="si">#{</span><span class="n">source</span><span class="si">}</span><span class="s2">&quot;</span>
+</span><span class='line'>  <span class="k">end</span>
+</span><span class='line'><span class="k">end</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>Мы вынесли работу с внешним сервисом в отдельный класс, и можем его включать в любом месте где захотим. И в этом состоит суть
+внедрения зависимости. Так как код стал изолирован, то и тестировать его можно, заменив например FixerAPI каким-нибудь FakeAPI.</p>
+
+<figure class='code'><figcaption><span>converter_test.rb</span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+</pre></td><td class='code'><pre><code class='ruby'><span class='line'><span class="k">class</span> <span class="nc">FakeAPI</span>
+</span><span class='line'>  <span class="k">def</span> <span class="nc">self</span><span class="o">.</span><span class="nf">get_exchange_rate</span><span class="p">(</span><span class="ss">source</span><span class="p">:</span> <span class="n">source</span><span class="p">,</span> <span class="ss">target</span><span class="p">:</span> <span class="n">target</span><span class="p">)</span>
+</span><span class='line'>    <span class="mi">2</span>
+</span><span class='line'>  <span class="k">end</span>
+</span><span class='line'><span class="k">end</span>
+</span><span class='line'>
+</span><span class='line'><span class="k">class</span> <span class="nc">ConverterTest</span> <span class="o">&lt;</span> <span class="no">Minitest</span><span class="o">::</span><span class="no">Test</span>
+</span><span class='line'>  <span class="k">def</span> <span class="nf">it_converts_eur_to_usd</span>
+</span><span class='line'>    <span class="n">assert_equals</span> <span class="mi">4</span><span class="p">,</span> <span class="no">Converter</span><span class="o">.</span><span class="n">convert!</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="s2">&quot;EUR&quot;</span><span class="p">,</span> <span class="s2">&quot;USD&quot;</span><span class="p">,</span> <span class="no">FakeAPI</span><span class="p">)</span>
+</span><span class='line'>  <span class="k">end</span>
+</span><span class='line'><span class="k">end</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<h3>Написать свой тестовый сервис</h3>
+
+<p>Я не буду долго рассматривать этот способ, так как считаю его очень сложным. Но он имеет место быть.
+Если коротко, то мы можем написать тестовый сервер, который будет работать например на <a href="https://nathanhoad.net/how-to-return-json-from-sinatra">Sinatra</a>. Он будет возвращать нам нужные данные.
+Их мы и будем использовать в наших тестах.</p>
+
+<figure class='code'><figcaption><span>fixer_server.rb</span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+</pre></td><td class='code'><pre><code class='ruby'><span class='line'><span class="nb">require</span> <span class="s1">&#39;sinatra&#39;</span>
+</span><span class='line'>
+</span><span class='line'><span class="n">get</span> <span class="s1">&#39;/latest&#39;</span> <span class="k">do</span>
+</span><span class='line'>  <span class="n">content_type</span> <span class="ss">:json</span>
+</span><span class='line'>  <span class="p">{</span> <span class="ss">base</span><span class="p">:</span> <span class="s2">&quot;EUR&quot;</span><span class="p">,</span> <span class="ss">date</span><span class="p">:</span> <span class="s2">&quot;2015-12-15&quot;</span><span class="p">,</span> <span class="ss">rates</span><span class="p">:</span> <span class="p">{</span> <span class="ss">usd</span><span class="p">:</span> <span class="mi">1</span><span class="o">.</span><span class="mi">099</span> <span class="p">}</span> <span class="p">}</span><span class="o">.</span><span class="n">to_json</span>
+</span><span class='line'><span class="k">end</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<h3>Заключение</h3>
+
+<p>Проблема вполне решаема, разными способами, но лично я остановился бы на VCR. Но конечно нужно смотреть еще
+на целесообразность использования того или инструмента для облегчения тестирования внешних сервисов.</p>
+]]></content>
+  </entry>
   
   <entry>
     <title type="html"><![CDATA[С наступающим Новым 2016 годом!]]></title>

@@ -1,6 +1,10 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.sitemaps.org/schemas/sitemap/0.9 http://www.sitemaps.org/schemas/sitemap/0.9/sitemap.xsd" xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url>
+    <loc>http://gururuby.ru/blog/2016/01/29/stubbing-external-services/</loc>
+    <lastmod>2016-01-29T22:40:46+03:00</lastmod>
+  </url>
+  <url>
     <loc>http://gururuby.ru/blog/2015/12/30/happy_new_year_2016/</loc>
     <lastmod>2015-12-30T00:00:00+03:00</lastmod>
   </url>
@@ -35,5 +39,17 @@
   </url>
   <url>
     <loc>http://gururuby.ru/blog/categories/other/</loc>
+  </url>
+  <url>
+    <loc>http://gururuby.ru/blog/categories/webmock/</loc>
+  </url>
+  <url>
+    <loc>http://gururuby.ru/blog/categories/tiestirovaniie/</loc>
+  </url>
+  <url>
+    <loc>http://gururuby.ru/blog/categories/vcr/</loc>
+  </url>
+  <url>
+    <loc>http://gururuby.ru/blog/categories/api/</loc>
   </url>
 </urlset>
