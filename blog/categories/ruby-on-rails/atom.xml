@@ -4,7 +4,7 @@
   <title><![CDATA[Category: Ruby on Rails | Gururuby.ru | Блог Ruby-разработчика]]></title>
   <link href="http://gururuby.ru/blog/categories/ruby-on-rails/atom.xml" rel="self"/>
   <link href="http://gururuby.ru/"/>
-  <updated>2016-01-30T13:08:32+03:00</updated>
+  <updated>2016-02-07T12:08:44+03:00</updated>
   <id>http://gururuby.ru/</id>
   <author>
     <name><![CDATA[Gururuby.ru]]></name>
@@ -12,6 +12,152 @@
   </author>
   <generator uri="http://octopress.org/">Octopress</generator>
 
+  
+  <entry>
+    <title type="html"><![CDATA[Кэширование коллекций в Rails 5]]></title>
+    <link href="http://gururuby.ru/blog/2016/02/07/activerecord-relation-cache-key/"/>
+    <updated>2016-02-07T10:40:46+03:00</updated>
+    <id>http://gururuby.ru/blog/2016/02/07/activerecord-relation-cache-key</id>
+    <content type="html"><![CDATA[<p><img src="/images/train.jpg">
+<a href="http://rusrails.ru/caching-with-rails-an-overview">Кэширование</a> в Rails позволяет повысить производительность вашего приложения.
+В Rails 5 теперь можно кешировать коллекции записей, благодаря методу:
+<code>ActiveRecord::Relation#cache_key</code></p>
+
+<!-- more -->
+
+
+<h3>Что из себя представляет кэширование коллекций</h3>
+
+<p>Рассмотрим пример, в котором нам нужно получить коллекцию пользователей с определенным именем.
+<code>ruby
+@users = User.where(name: 'Михаил')
+</code>
+В переменной <code>@users</code> мы получим некую коллекцию записей, которая будет являться объектом класса <code>ActiveRecord::Relation</code>
+Результат нашего запроса не изменится если будут выполнены следующие условия:</p>
+
+<ul>
+<li>Мы будем искать также <code>Михаила</code></li>
+<li>За время нашего запроса записи не были удалены</li>
+<li>За время нашего запроса не было добавлено новых записей</li>
+</ul>
+
+
+<p>Rails комьюнити <a href="https://github.com/rails/rails/pull/20884">предложило</a> реализовать кэширование для коллекций.
+Метод <code>cache_key</code> был добавлен в <code>ActiveRecord::Relation</code>, и он учитывает множество факторов,
+включая изменение запроса, <code>updated_at</code> для запроса, и значение счетчика записей в коллекции.</p>
+
+<h3>ActiveRecord::Relation#cache_key</h3>
+
+<p>Итак у нас есть коллекция пользователей, давайте вызовем у этой коллекции метод <code>cache_key</code>
+<code>ruby
+@users.cache_key
+ =&gt; "users/query-67sa32b36805c4b1ec1948b4eef8d58f-3-20160116111659084027"
+</code>
+Мы получим вот такую запись. Сейчас подробнее рассмотрим что она означает.</p>
+
+<ul>
+<li><code>users</code> представляет название коллекции, основанной на модели User</li>
+<li><code>query-</code> не меняющаяся часть, всегда будет присутствовать</li>
+<li><code>67sa32b36805c4b1ec1948b4eef8d58f</code> md5 сумма, котрая образуется из SQL. В нашем примере это <code>MD5("SELECT "users".* FROM "users" WHERE "users"."name" = 'Михаил'")</code></li>
+<li><code>3</code> размер коллекции</li>
+<li><code>20160116111659084027</code> временная метка(timestamp). Это значение соответствует самому свежему updated_at в коллекции.</li>
+</ul>
+
+
+<h3>Как использовать?</h3>
+
+<p>Один из примеров, как можно применить <code>cache_key</code>
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+</pre></td><td class='code'><pre><code class='ruby'><span class='line'><span class="n">users</span> <span class="o">=</span> <span class="no">User</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="nb">name</span><span class="p">:</span> <span class="o">&amp;</span><span class="n">lsquo</span><span class="p">;</span><span class="err">Михаил</span><span class="o">&amp;</span><span class="n">rsquo</span><span class="p">;)</span><span class="o">&lt;</span><span class="sr">/p&gt;</span>
+</span><span class='line'>
+</span><span class='line'><span class="sr">&lt;p&gt;if users.cache_key == current_cache_key</span>
+</span><span class='line'><span class="sr"> # не используем запрос, и возвращаем кешированную страницу</span>
+</span><span class='line'><span class="sr">else</span>
+</span><span class='line'><span class="sr"> # получаем данные из базы данных</span>
+</span><span class='line'><span class="sr">end</span>
+</span></code></pre></td></tr></table></div></figure></p>
+
+<h3>В модели нет колонки <code>:updated_at</code>. Что делать?</h3>
+
+<p>По умолчанию, для создания timestamp, <code>cache_key</code> использует колонку <code>:updated_at</code>
+Это дефолтная реализация. Если у вас этой колонки нет, но есть другая, с названием отличным от стандартного, вы можете
+использовать ee, указав как аргумент в вызове метода <code>cache_key</code>
+<code>ruby
+products = Product.where(category: 'cars')
+ products.cache_key(:last_bought_at)
+ =&gt; "products/query-211ae6b96ec456b8d7a24ad5fa2f8ad4-4-20160118080134697603"
+</code></p>
+
+<h3>Особенности использования</h3>
+
+<h4>Использование limit в запросах</h4>
+
+<p>Рассмотрим 2 варианта.
+Если мы хотим получить <code>3</code> пользователя с именем &lsquo;Михаил&rsquo;, то <code>cache_key</code> корректно работает.
+<code>ruby
+users = User.where(name: 'Михаил').limit(3)
+users.cache_key
+ =&gt; "users/query-67ed32b36805c4b1ec1948b4eef8d58f-3-20160116144936949365"
+</code></p>
+
+<p>Но если мы вызовем <code>cache_key</code> не извлекая записи в <code>@users</code>, то получим следующую картину.</p>
+
+<pre><code class="ruby">User.where(name: 'Алексей').limit(3).cache_key
+ =&gt; "users/query-8dc512b1408302d7a51cf1177e478463-5-20160116144936949365"
+</code></pre>
+
+<p>В итоге мы получаем всех пользователей, и наш <code>limit</code> не учитывается. Это особенность реализации метода.
+<a href="https://github.com/rails/rails/blob/39f383bad01e52c217c9007b5e9d3b239fe6a808/activerecord/lib/active_record/collection_cache_key.rb#L16">ActiveRecord::Base#collection_cache_key</a>.</p>
+
+<h4><code>Cache_key</code> не меняется, при изменении порядка записей в коллекции</h4>
+
+<p>Например:</p>
+
+<pre><code class="ruby">users1 = User.where(name: 'Михаил').order('id desc').limit(3)
+users1.cache_key
+ =&gt; "users/query-648522f6b3a53e0a7f7b63d5967afaf7-3-20160207084207845084"
+</code></pre>
+
+<p>В итоге мы получаем пользователей с ids - <code>[5, 4, 3]</code>
+Теперь попробуем удалить пользователя с <code>id = 3</code></p>
+
+<pre><code class="ruby">User.find(3).destroy
+
+ users2 = User.where(name: 'Михаил').order('id desc').limit(3)
+ users2.cache_key
+ =&gt; "users/query-648522f6b3a53e0a7f7b63d5967afaf7-3-20160207084207845084"
+</code></pre>
+
+<p>Обратите внимание, что <code>cache_key</code> совпадают в обоих примерах.
+Это происходит потому, что ни один из параметров, влияющих на ключ кэша не изменяется. Т.е. ни количество записей, ни запрос, ни метка времени последней записи.</p>
+
+<h3>Использование <code>group</code> в запросах</h3>
+
+<p>Также как и в случае с <code>limit</code>, <code>cache_key</code> ведет себя по-разному, в случаях когда записи уже есть в памяти и когда их еще нет.
+Допустим у нас есть несколько пользователей с одинаковыми именами:</p>
+
+<pre><code class="ruby">User.select(:name, :updated_at).group(:name).cache_key
+ =&gt; "users/query-1eabedee52c695b4c97f6d560211e970-3-20160207084207845084" 
+</code></pre>
+
+<p>В результате мы получаем размер записей <code>3</code>, в данном случае это будет количество записей в группе.
+Теперь посмотрим что будет, если коллекция будет загружена в память</p>
+
+<pre><code class="ruby">@users = User.select(:name, :updated_at).group(:name)
+@users.cache_key
+ =&gt; "users/query-1eabedee52c695b4c97f6d560211e970-1-20160207084207845084" 
+</code></pre>
+
+<p>Теперь размер коллекции составляет <code>1</code>. Т.е кол-во групп.
+Эти особенности нужно учитывать, иначе они могут сыграть злую шутку.</p>
+]]></content>
+  </entry>
   
   <entry>
     <title type="html"><![CDATA[Тестируем внешние сервисы легко!]]></title>

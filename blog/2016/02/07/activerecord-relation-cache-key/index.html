@@ -1,0 +1,458 @@
+
+<!DOCTYPE html>
+<!--[if IEMobile 7 ]><html class="no-js iem7"><![endif]-->
+<!--[if lt IE 9]><html class="no-js lte-ie8"><![endif]-->
+<!--[if (gt IE 8)|(gt IEMobile 7)|!(IEMobile)|!(IE)]><!--><html class="no-js" lang="en"><!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  <title>Кэширование коллекций в Rails 5 - Gururuby.ru | Блог Ruby-разработчика</title>
+  <meta name="author" content="Gururuby.ru">
+
+  
+  <meta name="description" content="Кэширование в Rails позволяет повысить производительность вашего приложения.
+В Rails 5 теперь можно кешировать коллекции записей, благодаря методу: &hellip;">
+  
+
+  <!-- http://t.co/dKP3o1e -->
+  <meta name="HandheldFriendly" content="True">
+  <meta name="MobileOptimized" content="320">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  
+  <link rel="canonical" href="http://gururuby.ru/blog/2016/02/07/activerecord-relation-cache-key/">
+  <link href="/favicon.png" rel="icon">
+  <link href="/stylesheets/screen.css" media="screen, projection" rel="stylesheet" type="text/css">
+  <link href="/atom.xml" rel="alternate" title="Gururuby.ru | Блог Ruby-разработчика" type="application/atom+xml">
+  <script src="/javascripts/modernizr-2.0.js"></script>
+  <script src="//ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js"></script>
+  <script>!window.jQuery && document.write(unescape('%3Cscript src="/javascripts/libs/jquery.min.js"%3E%3C/script%3E'))</script>
+  <script src="/javascripts/octopress.js" type="text/javascript"></script>
+  <!--Fonts from Google"s Web font directory at http://google.com/webfonts -->
+<link href="//fonts.googleapis.com/css?family=PT+Serif:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
+<link href="//fonts.googleapis.com/css?family=PT+Sans:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
+
+  
+  <script type="text/javascript">
+    var _gaq = _gaq || [];
+    _gaq.push(['_setAccount', 'UA-54692220-1']);
+    _gaq.push(['_trackPageview']);
+
+    (function() {
+      var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
+      ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+      var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
+    })();
+  </script>
+
+
+</head>
+
+<body   >
+  <header role="banner"><a href="/">
+  <img src="/images/logo.png" width="180" />
+</a>
+<hgroup>
+  <!--<h1><a href="/">Gururuby.ru | Блог Ruby-разработчика</a></h1>-->
+  
+  <h2>Блог Ruby-разработчика</h2>
+  
+</hgroup>
+
+</header>
+  <nav role="navigation"><ul class="subscription" data-subscription="rss">
+  <li><a href="/atom.xml" rel="subscribe-rss" title="subscribe via RSS">RSS</a></li>
+  
+</ul>
+  
+<form action="https://www.google.com/search" method="get">
+  <fieldset role="search">
+    <input type="hidden" name="sitesearch" value="gururuby.ru">
+    <input class="search" type="text" name="q" results="0" placeholder="Search"/>
+  </fieldset>
+</form>
+  
+<ul class="main-navigation">
+  <li><a href="/">Записи</a></li>
+  <li><a href="/blog/archives">Архивы</a></li>
+</ul>
+
+</nav>
+  <div id="main">
+    <div id="content">
+      <div>
+<article class="hentry" role="article">
+  
+  <header>
+    
+      <h1 class="entry-title">Кэширование коллекций в Rails 5</h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+<time class='entry-date' datetime='2016-02-07T10:40:46+03:00'><span class='date'>07/02/2016</span> <span class='time'>10:40 am</span></time>
+        
+           | <a href="#disqus_thread"
+             data-disqus-identifier="http://gururuby.ru">Comments</a>
+        
+      </p>
+    
+  </header>
+
+
+<div class="entry-content"><p><img src="/images/train.jpg">
+<a href="http://rusrails.ru/caching-with-rails-an-overview">Кэширование</a> в Rails позволяет повысить производительность вашего приложения.
+В Rails 5 теперь можно кешировать коллекции записей, благодаря методу:
+<code>ActiveRecord::Relation#cache_key</code></p>
+
+<!-- more -->
+
+
+<h3>Что из себя представляет кэширование коллекций</h3>
+
+<p>Рассмотрим пример, в котором нам нужно получить коллекцию пользователей с определенным именем.</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class='ruby'><span class='line'><span class="vi">@users</span> <span class="o">=</span> <span class="no">User</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="nb">name</span><span class="p">:</span> <span class="s1">&#39;Михаил&#39;</span><span class="p">)</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>В переменной <code>@users</code> мы получим некую коллекцию записей, которая будет являться объектом класса <code>ActiveRecord::Relation</code>
+Результат нашего запроса не изменится если будут выполнены следующие условия:</p>
+
+<ul>
+<li>Мы будем искать также <code>Михаила</code></li>
+<li>За время нашего запроса записи не были удалены</li>
+<li>За время нашего запроса не было добавлено новых записей</li>
+</ul>
+
+
+<p>Rails комьюнити <a href="https://github.com/rails/rails/pull/20884">предложило</a> реализовать кэширование для коллекций.
+Метод <code>cache_key</code> был добавлен в <code>ActiveRecord::Relation</code>, и он учитывает множество факторов,
+включая изменение запроса, <code>updated_at</code> для запроса, и значение счетчика записей в коллекции.</p>
+
+<h3>ActiveRecord::Relation#cache_key</h3>
+
+<p>Итак у нас есть коллекция пользователей, давайте вызовем у этой коллекции метод <code>cache_key</code></p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+</pre></td><td class='code'><pre><code class='ruby'><span class='line'><span class="vi">@users</span><span class="o">.</span><span class="n">cache_key</span>
+</span><span class='line'> <span class="o">=&gt;</span> <span class="s2">&quot;users/query-67sa32b36805c4b1ec1948b4eef8d58f-3-20160116111659084027&quot;</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>Мы получим вот такую запись. Сейчас подробнее рассмотрим что она означает.</p>
+
+<ul>
+<li><code>users</code> представляет название коллекции, основанной на модели User</li>
+<li><code>query-</code> не меняющаяся часть, всегда будет присутствовать</li>
+<li><code>67sa32b36805c4b1ec1948b4eef8d58f</code> md5 сумма, котрая образуется из SQL. В нашем примере это <code>MD5("SELECT "users".* FROM "users" WHERE "users"."name" = 'Михаил'")</code></li>
+<li><code>3</code> размер коллекции</li>
+<li><code>20160116111659084027</code> временная метка(timestamp). Это значение соответствует самому свежему updated_at в коллекции.</li>
+</ul>
+
+
+<h3>Как использовать?</h3>
+
+<p>Один из примеров, как можно применить <code>cache_key</code></p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+</pre></td><td class='code'><pre><code class='ruby'><span class='line'><span class="n">users</span> <span class="o">=</span> <span class="no">User</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="nb">name</span><span class="p">:</span> <span class="s1">&#39;Михаил&#39;</span><span class="p">)</span>
+</span><span class='line'>
+</span><span class='line'><span class="k">if</span> <span class="n">users</span><span class="o">.</span><span class="n">cache_key</span> <span class="o">==</span> <span class="n">current_cache_key</span>
+</span><span class='line'> <span class="c1"># не используем запрос, и возвращаем кешированную страницу</span>
+</span><span class='line'><span class="k">else</span>
+</span><span class='line'> <span class="c1"># получаем данные из базы данных</span>
+</span><span class='line'><span class="k">end</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<h3>В модели нет колонки <code>:updated_at</code>. Что делать?</h3>
+
+<p>По умолчанию, для создания timestamp, <code>cache_key</code> использует колонку <code>:updated_at</code>
+Это дефолтная реализация. Если у вас этой колонки нет, но есть другая, с названием отличным от стандартного, вы можете
+использовать ee, указав как аргумент в вызове метода <code>cache_key</code></p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+</pre></td><td class='code'><pre><code class='ruby'><span class='line'><span class="n">products</span> <span class="o">=</span> <span class="no">Product</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="ss">category</span><span class="p">:</span> <span class="s1">&#39;cars&#39;</span><span class="p">)</span>
+</span><span class='line'> <span class="n">products</span><span class="o">.</span><span class="n">cache_key</span><span class="p">(</span><span class="ss">:last_bought_at</span><span class="p">)</span>
+</span><span class='line'> <span class="o">=&gt;</span> <span class="s2">&quot;products/query-211ae6b96ec456b8d7a24ad5fa2f8ad4-4-20160118080134697603&quot;</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<h3>Особенности использования</h3>
+
+<h4>Использование limit в запросах</h4>
+
+<p>Рассмотрим 2 варианта.
+Если мы хотим получить <code>3</code> пользователя с именем &lsquo;Михаил&rsquo;, то <code>cache_key</code> корректно работает.</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+</pre></td><td class='code'><pre><code class='ruby'><span class='line'><span class="n">users</span> <span class="o">=</span> <span class="no">User</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="nb">name</span><span class="p">:</span> <span class="s1">&#39;Михаил&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">limit</span><span class="p">(</span><span class="mi">3</span><span class="p">)</span>
+</span><span class='line'><span class="n">users</span><span class="o">.</span><span class="n">cache_key</span>
+</span><span class='line'> <span class="o">=&gt;</span> <span class="s2">&quot;users/query-67ed32b36805c4b1ec1948b4eef8d58f-3-20160116144936949365&quot;</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>Но если мы вызовем <code>cache_key</code> не извлекая записи в <code>@users</code>, то получим следующую картину.</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+</pre></td><td class='code'><pre><code class='ruby'><span class='line'><span class="no">User</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="nb">name</span><span class="p">:</span> <span class="s1">&#39;Алексей&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">limit</span><span class="p">(</span><span class="mi">3</span><span class="p">)</span><span class="o">.</span><span class="n">cache_key</span>
+</span><span class='line'> <span class="o">=&gt;</span> <span class="s2">&quot;users/query-8dc512b1408302d7a51cf1177e478463-5-20160116144936949365&quot;</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p></p>
+
+<p>В итоге мы получаем всех пользователей, и наш <code>limit</code> не учитывается. Это особенность реализации метода.
+<a href="https://github.com/rails/rails/blob/39f383bad01e52c217c9007b5e9d3b239fe6a808/activerecord/lib/active_record/collection_cache_key.rb#L16">ActiveRecord::Base#collection_cache_key</a>.</p>
+
+<h4><code>Cache_key</code> не меняется, при изменении порядка записей в коллекции</h4>
+
+<p>Например:</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+</pre></td><td class='code'><pre><code class='ruby'><span class='line'><span class="n">users1</span> <span class="o">=</span> <span class="no">User</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="nb">name</span><span class="p">:</span> <span class="s1">&#39;Михаил&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">order</span><span class="p">(</span><span class="s1">&#39;id desc&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">limit</span><span class="p">(</span><span class="mi">3</span><span class="p">)</span>
+</span><span class='line'><span class="n">users1</span><span class="o">.</span><span class="n">cache_key</span>
+</span><span class='line'> <span class="o">=&gt;</span> <span class="s2">&quot;users/query-648522f6b3a53e0a7f7b63d5967afaf7-3-20160207084207845084&quot;</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>В итоге мы получаем пользователей с ids - <code>[5, 4, 3]</code>
+Теперь попробуем удалить пользователя с <code>id = 3</code></p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+</pre></td><td class='code'><pre><code class='ruby'><span class='line'><span class="no">User</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="mi">3</span><span class="p">)</span><span class="o">.</span><span class="n">destroy</span>
+</span><span class='line'>
+</span><span class='line'> <span class="n">users2</span> <span class="o">=</span> <span class="no">User</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="nb">name</span><span class="p">:</span> <span class="s1">&#39;Михаил&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">order</span><span class="p">(</span><span class="s1">&#39;id desc&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">limit</span><span class="p">(</span><span class="mi">3</span><span class="p">)</span>
+</span><span class='line'> <span class="n">users2</span><span class="o">.</span><span class="n">cache_key</span>
+</span><span class='line'> <span class="o">=&gt;</span> <span class="s2">&quot;users/query-648522f6b3a53e0a7f7b63d5967afaf7-3-20160207084207845084&quot;</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>Обратите внимание, что <code>cache_key</code> совпадают в обоих примерах.
+Это происходит потому, что ни один из параметров, влияющих на ключ кэша не изменяется. Т.е. ни количество записей, ни запрос, ни метка времени последней записи.</p>
+
+<h3>Использование <code>group</code> в запросах</h3>
+
+<p>Также как и в случае с <code>limit</code>, <code>cache_key</code> ведет себя по-разному, в случаях когда записи уже есть в памяти и когда их еще нет.
+Допустим у нас есть несколько пользователей с одинаковыми именами:</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+</pre></td><td class='code'><pre><code class='ruby'><span class='line'><span class="no">User</span><span class="o">.</span><span class="n">select</span><span class="p">(</span><span class="ss">:name</span><span class="p">,</span> <span class="ss">:updated_at</span><span class="p">)</span><span class="o">.</span><span class="n">group</span><span class="p">(</span><span class="ss">:name</span><span class="p">)</span><span class="o">.</span><span class="n">cache_key</span>
+</span><span class='line'> <span class="o">=&gt;</span> <span class="s2">&quot;users/query-1eabedee52c695b4c97f6d560211e970-3-20160207084207845084&quot;</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>В результате мы получаем размер записей <code>3</code>, в данном случае это будет количество записей в группе.
+Теперь посмотрим что будет, если коллекция будет загружена в память</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+</pre></td><td class='code'><pre><code class='ruby'><span class='line'><span class="vi">@users</span> <span class="o">=</span> <span class="no">User</span><span class="o">.</span><span class="n">select</span><span class="p">(</span><span class="ss">:name</span><span class="p">,</span> <span class="ss">:updated_at</span><span class="p">)</span><span class="o">.</span><span class="n">group</span><span class="p">(</span><span class="ss">:name</span><span class="p">)</span>
+</span><span class='line'><span class="vi">@users</span><span class="o">.</span><span class="n">cache_key</span>
+</span><span class='line'> <span class="o">=&gt;</span> <span class="s2">&quot;users/query-1eabedee52c695b4c97f6d560211e970-1-20160207084207845084&quot;</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>Теперь размер коллекции составляет <code>1</code>. Т.е кол-во групп.
+Эти особенности нужно учитывать, иначе они могут сыграть злую шутку.</p>
+</div>
+
+
+  <footer>
+    <p class="meta">
+      
+  
+
+<span class="byline author vcard">Опубликовано <span class="fn">Gururuby.ru</span></span>
+
+      
+
+
+
+
+<time class='entry-date' datetime='2016-02-07T10:40:46+03:00'><span class='date'>07/02/2016</span> <span class='time'>10:40 am</span></time>
+      
+
+<span class="categories">
+  
+    <a class='category' href='/blog/categories/activerecord/'>activerecord</a>, <a class='category' href='/blog/categories/rails-5/'>rails 5</a>, <a class='category' href='/blog/categories/ruby-on-rails/'>ruby on rails</a>, <a class='category' href='/blog/categories/keshirovaniie/'>кэширование</a>
+  
+</span>
+
+
+    </p>
+    
+      <div class="sharing">
+  
+  <a href="//twitter.com/share" class="twitter-share-button" data-url="http://gururuby.ru/blog/2016/02/07/activerecord-relation-cache-key/" data-via="" data-counturl="http://gururuby.ru/blog/2016/02/07/activerecord-relation-cache-key/" >Tweet</a>
+  
+  
+  
+    <div class="fb-like" data-send="true" data-width="450" data-show-faces="false"></div>
+  
+</div>
+
+    
+    <p class="meta">
+      
+        <a class="basic-alignment left" href="/blog/2016/01/29/stubbing-external-services/" title="Previous Post: Тестируем внешние сервисы легко!">&laquo; Тестируем внешние сервисы легко!</a>
+      
+      
+    </p>
+  </footer>
+</article>
+
+  <section>
+    <h1>Comments</h1>
+    <div id="disqus_thread" aria-live="polite"><noscript>Please enable JavaScript to view the <a href="http://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+</div>
+  </section>
+
+</div>
+
+<aside class="sidebar">
+  
+    <section>
+  <h1>Свежие записи</h1>
+  <ul id="recent_posts">
+    
+      <li class="post">
+        <a href="/blog/2016/02/07/activerecord-relation-cache-key/">Кэширование коллекций в Rails 5</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2016/01/29/stubbing-external-services/">Тестируем внешние сервисы легко!</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2015/12/30/happy_new_year_2016/">С наступающим Новым 2016 годом!</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2015/12/18/simple-chat-via-action-cable/">Простой чат с помощью ActionCable</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2015/12/16/whats_new_in_ruby_2_3/">Что нового в Ruby 2.3?</a>
+      </li>
+    
+  </ul>
+</section>
+<section>
+    <h1>Категории</h1>
+    <span id="tag-cloud"><a href='/blog/categories/actioncable' style='font-size: 80.0%'>actioncable</a> <a href='/blog/categories/activerecord' style='font-size: 80.0%'>activerecord</a> <a href='/blog/categories/api' style='font-size: 80.0%'>api</a> <a href='/blog/categories/other' style='font-size: 80.0%'>other</a> <a href='/blog/categories/rails-5' style='font-size: 80.0%'>rails 5</a> <a href='/blog/categories/ruby' style='font-size: 100.0%'>ruby</a> <a href='/blog/categories/ruby-on-rails' style='font-size: 120.0%'>ruby on rails</a> <a href='/blog/categories/ruby-2-dot-3' style='font-size: 80.0%'>ruby-2.3</a> <a href='/blog/categories/vcr' style='font-size: 80.0%'>vcr</a> <a href='/blog/categories/webmock' style='font-size: 80.0%'>webmock</a> <a href='/blog/categories/websocket' style='font-size: 80.0%'>websocket</a> <a href='/blog/categories/keshirovaniie' style='font-size: 80.0%'>кэширование</a> <a href='/blog/categories/tiestirovaniie' style='font-size: 80.0%'>тестирование</a> </span>
+</section>
+
+  
+</aside>
+
+
+    </div>
+  </div>
+  <footer role="contentinfo"><p>
+  Copyright &copy; 2016 - Gururuby.ru -
+  <span class="credit">Powered by <a href="http://octopress.org">Octopress</a></span>
+</p>
+
+</footer>
+  
+
+<script type="text/javascript">
+      var disqus_shortname = 'gururuby';
+      
+        
+        // var disqus_developer = 1;
+        var disqus_identifier = 'http://gururuby.ru/blog/2016/02/07/activerecord-relation-cache-key/';
+        var disqus_url = 'http://gururuby.ru/blog/2016/02/07/activerecord-relation-cache-key/';
+        var disqus_script = 'embed.js';
+      
+    (function () {
+      var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
+      dsq.src = '//' + disqus_shortname + '.disqus.com/' + disqus_script;
+      (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+    }());
+</script>
+
+
+
+<div id="fb-root"></div>
+<script>(function(d, s, id) {
+  var js, fjs = d.getElementsByTagName(s)[0];
+  if (d.getElementById(id)) {return;}
+  js = d.createElement(s); js.id = id; js.async = true;
+  js.src = "//connect.facebook.net/en_US/all.js#appId=212934732101925&xfbml=1";
+  fjs.parentNode.insertBefore(js, fjs);
+}(document, 'script', 'facebook-jssdk'));</script>
+
+
+
+
+
+  <script type="text/javascript">
+    (function(){
+      var twitterWidgets = document.createElement('script');
+      twitterWidgets.type = 'text/javascript';
+      twitterWidgets.async = true;
+      twitterWidgets.src = '//platform.twitter.com/widgets.js';
+      document.getElementsByTagName('head')[0].appendChild(twitterWidgets);
+    })();
+  </script>
+
+
+
+<!-- Yandex.Metrika counter -->
+<script type="text/javascript">
+  (function (d, w, c) {
+    (w[c] = w[c] || []).push(function() {
+      try {
+        w.yaCounter35016535 = new Ya.Metrika({
+          id:35016535,
+          clickmap:true,
+          trackLinks:true,
+          accurateTrackBounce:true
+        });
+      } catch(e) { }
+    });
+
+    var n = d.getElementsByTagName("script")[0],
+            s = d.createElement("script"),
+            f = function () { n.parentNode.insertBefore(s, n); };
+    s.type = "text/javascript";
+    s.async = true;
+    s.src = "https://mc.yandex.ru/metrika/watch.js";
+
+    if (w.opera == "[object Opera]") {
+      d.addEventListener("DOMContentLoaded", f, false);
+    } else { f(); }
+  })(document, window, "yandex_metrika_callbacks");
+</script>
+<noscript><div><img src="https://mc.yandex.ru/watch/35016535" style="position:absolute; left:-9999px;" alt="" /></div></noscript>
+<!-- /Yandex.Metrika counter -->
+
+</body>
+</html>

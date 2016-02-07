@@ -4,7 +4,7 @@
   <title><![CDATA[Gururuby.ru | Блог Ruby-разработчика]]></title>
   <link href="http://gururuby.ru/atom.xml" rel="self"/>
   <link href="http://gururuby.ru/"/>
-  <updated>2016-01-30T13:08:32+03:00</updated>
+  <updated>2016-02-07T12:08:44+03:00</updated>
   <id>http://gururuby.ru/</id>
   <author>
     <name><![CDATA[Gururuby.ru]]></name>
@@ -12,6 +12,191 @@
   </author>
   <generator uri="http://octopress.org/">Octopress</generator>
 
+  
+  <entry>
+    <title type="html"><![CDATA[Кэширование коллекций в Rails 5]]></title>
+    <link href="http://gururuby.ru/blog/2016/02/07/activerecord-relation-cache-key/"/>
+    <updated>2016-02-07T10:40:46+03:00</updated>
+    <id>http://gururuby.ru/blog/2016/02/07/activerecord-relation-cache-key</id>
+    <content type="html"><![CDATA[<p><img src="http://gururuby.ru/images/train.jpg">
+<a href="http://rusrails.ru/caching-with-rails-an-overview">Кэширование</a> в Rails позволяет повысить производительность вашего приложения.
+В Rails 5 теперь можно кешировать коллекции записей, благодаря методу:
+<code>ActiveRecord::Relation#cache_key</code></p>
+
+<!-- more -->
+
+
+<h3>Что из себя представляет кэширование коллекций</h3>
+
+<p>Рассмотрим пример, в котором нам нужно получить коллекцию пользователей с определенным именем.</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class='ruby'><span class='line'><span class="vi">@users</span> <span class="o">=</span> <span class="no">User</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="nb">name</span><span class="p">:</span> <span class="s1">&#39;Михаил&#39;</span><span class="p">)</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>В переменной <code>@users</code> мы получим некую коллекцию записей, которая будет являться объектом класса <code>ActiveRecord::Relation</code>
+Результат нашего запроса не изменится если будут выполнены следующие условия:</p>
+
+<ul>
+<li>Мы будем искать также <code>Михаила</code></li>
+<li>За время нашего запроса записи не были удалены</li>
+<li>За время нашего запроса не было добавлено новых записей</li>
+</ul>
+
+
+<p>Rails комьюнити <a href="https://github.com/rails/rails/pull/20884">предложило</a> реализовать кэширование для коллекций.
+Метод <code>cache_key</code> был добавлен в <code>ActiveRecord::Relation</code>, и он учитывает множество факторов,
+включая изменение запроса, <code>updated_at</code> для запроса, и значение счетчика записей в коллекции.</p>
+
+<h3>ActiveRecord::Relation#cache_key</h3>
+
+<p>Итак у нас есть коллекция пользователей, давайте вызовем у этой коллекции метод <code>cache_key</code></p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+</pre></td><td class='code'><pre><code class='ruby'><span class='line'><span class="vi">@users</span><span class="o">.</span><span class="n">cache_key</span>
+</span><span class='line'> <span class="o">=&gt;</span> <span class="s2">&quot;users/query-67sa32b36805c4b1ec1948b4eef8d58f-3-20160116111659084027&quot;</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>Мы получим вот такую запись. Сейчас подробнее рассмотрим что она означает.</p>
+
+<ul>
+<li><code>users</code> представляет название коллекции, основанной на модели User</li>
+<li><code>query-</code> не меняющаяся часть, всегда будет присутствовать</li>
+<li><code>67sa32b36805c4b1ec1948b4eef8d58f</code> md5 сумма, котрая образуется из SQL. В нашем примере это <code>MD5("SELECT "users".* FROM "users" WHERE "users"."name" = 'Михаил'")</code></li>
+<li><code>3</code> размер коллекции</li>
+<li><code>20160116111659084027</code> временная метка(timestamp). Это значение соответствует самому свежему updated_at в коллекции.</li>
+</ul>
+
+
+<h3>Как использовать?</h3>
+
+<p>Один из примеров, как можно применить <code>cache_key</code></p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+</pre></td><td class='code'><pre><code class='ruby'><span class='line'><span class="n">users</span> <span class="o">=</span> <span class="no">User</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="nb">name</span><span class="p">:</span> <span class="s1">&#39;Михаил&#39;</span><span class="p">)</span>
+</span><span class='line'>
+</span><span class='line'><span class="k">if</span> <span class="n">users</span><span class="o">.</span><span class="n">cache_key</span> <span class="o">==</span> <span class="n">current_cache_key</span>
+</span><span class='line'> <span class="c1"># не используем запрос, и возвращаем кешированную страницу</span>
+</span><span class='line'><span class="k">else</span>
+</span><span class='line'> <span class="c1"># получаем данные из базы данных</span>
+</span><span class='line'><span class="k">end</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<h3>В модели нет колонки <code>:updated_at</code>. Что делать?</h3>
+
+<p>По умолчанию, для создания timestamp, <code>cache_key</code> использует колонку <code>:updated_at</code>
+Это дефолтная реализация. Если у вас этой колонки нет, но есть другая, с названием отличным от стандартного, вы можете
+использовать ee, указав как аргумент в вызове метода <code>cache_key</code></p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+</pre></td><td class='code'><pre><code class='ruby'><span class='line'><span class="n">products</span> <span class="o">=</span> <span class="no">Product</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="ss">category</span><span class="p">:</span> <span class="s1">&#39;cars&#39;</span><span class="p">)</span>
+</span><span class='line'> <span class="n">products</span><span class="o">.</span><span class="n">cache_key</span><span class="p">(</span><span class="ss">:last_bought_at</span><span class="p">)</span>
+</span><span class='line'> <span class="o">=&gt;</span> <span class="s2">&quot;products/query-211ae6b96ec456b8d7a24ad5fa2f8ad4-4-20160118080134697603&quot;</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<h3>Особенности использования</h3>
+
+<h4>Использование limit в запросах</h4>
+
+<p>Рассмотрим 2 варианта.
+Если мы хотим получить <code>3</code> пользователя с именем &lsquo;Михаил&rsquo;, то <code>cache_key</code> корректно работает.</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+</pre></td><td class='code'><pre><code class='ruby'><span class='line'><span class="n">users</span> <span class="o">=</span> <span class="no">User</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="nb">name</span><span class="p">:</span> <span class="s1">&#39;Михаил&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">limit</span><span class="p">(</span><span class="mi">3</span><span class="p">)</span>
+</span><span class='line'><span class="n">users</span><span class="o">.</span><span class="n">cache_key</span>
+</span><span class='line'> <span class="o">=&gt;</span> <span class="s2">&quot;users/query-67ed32b36805c4b1ec1948b4eef8d58f-3-20160116144936949365&quot;</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>Но если мы вызовем <code>cache_key</code> не извлекая записи в <code>@users</code>, то получим следующую картину.</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+</pre></td><td class='code'><pre><code class='ruby'><span class='line'><span class="no">User</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="nb">name</span><span class="p">:</span> <span class="s1">&#39;Алексей&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">limit</span><span class="p">(</span><span class="mi">3</span><span class="p">)</span><span class="o">.</span><span class="n">cache_key</span>
+</span><span class='line'> <span class="o">=&gt;</span> <span class="s2">&quot;users/query-8dc512b1408302d7a51cf1177e478463-5-20160116144936949365&quot;</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p></p>
+
+<p>В итоге мы получаем всех пользователей, и наш <code>limit</code> не учитывается. Это особенность реализации метода.
+<a href="https://github.com/rails/rails/blob/39f383bad01e52c217c9007b5e9d3b239fe6a808/activerecord/lib/active_record/collection_cache_key.rb#L16">ActiveRecord::Base#collection_cache_key</a>.</p>
+
+<h4><code>Cache_key</code> не меняется, при изменении порядка записей в коллекции</h4>
+
+<p>Например:</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+</pre></td><td class='code'><pre><code class='ruby'><span class='line'><span class="n">users1</span> <span class="o">=</span> <span class="no">User</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="nb">name</span><span class="p">:</span> <span class="s1">&#39;Михаил&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">order</span><span class="p">(</span><span class="s1">&#39;id desc&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">limit</span><span class="p">(</span><span class="mi">3</span><span class="p">)</span>
+</span><span class='line'><span class="n">users1</span><span class="o">.</span><span class="n">cache_key</span>
+</span><span class='line'> <span class="o">=&gt;</span> <span class="s2">&quot;users/query-648522f6b3a53e0a7f7b63d5967afaf7-3-20160207084207845084&quot;</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>В итоге мы получаем пользователей с ids - <code>[5, 4, 3]</code>
+Теперь попробуем удалить пользователя с <code>id = 3</code></p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+</pre></td><td class='code'><pre><code class='ruby'><span class='line'><span class="no">User</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="mi">3</span><span class="p">)</span><span class="o">.</span><span class="n">destroy</span>
+</span><span class='line'>
+</span><span class='line'> <span class="n">users2</span> <span class="o">=</span> <span class="no">User</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="nb">name</span><span class="p">:</span> <span class="s1">&#39;Михаил&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">order</span><span class="p">(</span><span class="s1">&#39;id desc&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">limit</span><span class="p">(</span><span class="mi">3</span><span class="p">)</span>
+</span><span class='line'> <span class="n">users2</span><span class="o">.</span><span class="n">cache_key</span>
+</span><span class='line'> <span class="o">=&gt;</span> <span class="s2">&quot;users/query-648522f6b3a53e0a7f7b63d5967afaf7-3-20160207084207845084&quot;</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>Обратите внимание, что <code>cache_key</code> совпадают в обоих примерах.
+Это происходит потому, что ни один из параметров, влияющих на ключ кэша не изменяется. Т.е. ни количество записей, ни запрос, ни метка времени последней записи.</p>
+
+<h3>Использование <code>group</code> в запросах</h3>
+
+<p>Также как и в случае с <code>limit</code>, <code>cache_key</code> ведет себя по-разному, в случаях когда записи уже есть в памяти и когда их еще нет.
+Допустим у нас есть несколько пользователей с одинаковыми именами:</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+</pre></td><td class='code'><pre><code class='ruby'><span class='line'><span class="no">User</span><span class="o">.</span><span class="n">select</span><span class="p">(</span><span class="ss">:name</span><span class="p">,</span> <span class="ss">:updated_at</span><span class="p">)</span><span class="o">.</span><span class="n">group</span><span class="p">(</span><span class="ss">:name</span><span class="p">)</span><span class="o">.</span><span class="n">cache_key</span>
+</span><span class='line'> <span class="o">=&gt;</span> <span class="s2">&quot;users/query-1eabedee52c695b4c97f6d560211e970-3-20160207084207845084&quot;</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>В результате мы получаем размер записей <code>3</code>, в данном случае это будет количество записей в группе.
+Теперь посмотрим что будет, если коллекция будет загружена в память</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+</pre></td><td class='code'><pre><code class='ruby'><span class='line'><span class="vi">@users</span> <span class="o">=</span> <span class="no">User</span><span class="o">.</span><span class="n">select</span><span class="p">(</span><span class="ss">:name</span><span class="p">,</span> <span class="ss">:updated_at</span><span class="p">)</span><span class="o">.</span><span class="n">group</span><span class="p">(</span><span class="ss">:name</span><span class="p">)</span>
+</span><span class='line'><span class="vi">@users</span><span class="o">.</span><span class="n">cache_key</span>
+</span><span class='line'> <span class="o">=&gt;</span> <span class="s2">&quot;users/query-1eabedee52c695b4c97f6d560211e970-1-20160207084207845084&quot;</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>Теперь размер коллекции составляет <code>1</code>. Т.е кол-во групп.
+Эти особенности нужно учитывать, иначе они могут сыграть злую шутку.</p>
+]]></content>
+  </entry>
   
   <entry>
     <title type="html"><![CDATA[Тестируем внешние сервисы легко!]]></title>
