@@ -4,7 +4,7 @@
   <title><![CDATA[Category: Rails 5 | Gururuby.ru | Блог Ruby-разработчика]]></title>
   <link href="http://gururuby.ru/blog/categories/rails-5/atom.xml" rel="self"/>
   <link href="http://gururuby.ru/"/>
-  <updated>2016-02-07T14:34:39+03:00</updated>
+  <updated>2016-02-12T02:01:38+03:00</updated>
   <id>http://gururuby.ru/</id>
   <author>
     <name><![CDATA[Gururuby.ru]]></name>
@@ -12,6 +12,139 @@
   </author>
   <generator uri="http://octopress.org/">Octopress</generator>
 
+  
+  <entry>
+    <title type="html"><![CDATA[ActiveRecord Attributes в Rails 5]]></title>
+    <link href="http://gururuby.ru/blog/2016/02/11/rails-5-attributes/"/>
+    <updated>2016-02-11T10:40:46+03:00</updated>
+    <id>http://gururuby.ru/blog/2016/02/11/rails-5-attributes</id>
+    <content type="html"><![CDATA[<p><img class="center" src="/images/rails5.jpg"></p>
+
+<p>В Rails 5 много нововведений, одним из них является ActiveRecord Attributes.
+Эта фича позволяет добавлять аттрибут в модель Rails и обработать его согласно указанному типу.
+Посмотрим насколько полезен этот новый функционал.</p>
+
+<!-- more -->
+
+
+<p>Рассмотрим пример. У нас есть модель пользователей - User. Миграция и сама модель описаны ниже.</p>
+
+<pre><code class="ruby">class CreateUsers &lt; ActiveRecord::Migration
+  def change
+    create_table :users do |t|
+      t.string :name
+      t.integer :age
+      t.string :male
+      t.timestamps(null: false)
+    end
+  end
+end
+
+class User &lt; ActiveRecord::Base
+end
+</code></pre>
+
+<p>Обратите внимание на колонку <code>male</code>, мы могли бы вполне сделать ее с типом <code>boolean</code>, но в данном примере это сделано специально,
+чтобы показать как мы сможем использовать Attributes.</p>
+
+<p>Хотя бывают и реальные случаи, когда изначально в архитектуре проекта был неверно выбран
+тип данных, и по прошествии времени, изменение типа будет болезненным.</p>
+
+<p>Давайте воспользуемся нововведением. Укажем колонку <code>male</code> как аттрибут, с типом <code>boolean</code></p>
+
+<pre><code class="ruby">class User &lt; ActiveRecord::Base
+  attribute :male, :boolean
+end
+</code></pre>
+
+<p>Теперь мы можем использовать колонку так, как будто ее тип <code>boolean</code>, например:</p>
+
+<pre><code class="ruby">user = User.new(male: 'yes')
+user.male
+# =&gt; true
+
+user = User.new(male: 'f')
+user.male
+# =&gt; false
+
+user = User.new(male: 0)
+user.male
+# =&gt; false
+</code></pre>
+
+<p>Вот так легко теперь можно решить проблему несовместимости типов данных указанных в таблице БД и требований согласно бизнес логике.
+ActiveRecord Attributes поддерживает основные типы данных, ниже список:</p>
+
+<ul>
+<li>:big_integer</li>
+<li>:binary</li>
+<li>:boolean</li>
+<li>:date</li>
+<li>:date_time</li>
+<li>:decimal</li>
+<li>:float</li>
+<li>:integer</li>
+<li>:string</li>
+<li>:text</li>
+<li>:time</li>
+</ul>
+
+
+<p>Аттрибут не обязательно может быть колонкой в таблице, можно применять его и для обычных аттрибутов модели.
+Добавим для модели <code>User</code> аттрибут <code>confirmed_at</code>, и укажем тип данных <code>:date_time</code>, и все будет корректно
+обрабатываться. При этом мы не указываем аттрибут через <code>attr_accessor</code>.</p>
+
+<pre><code class="ruby">class User
+  attribute :confirmed_at, :date_time
+end
+
+user = User.new
+user.confirmed_at = '2016-02-12 03:00'
+user.confirmed_at
+# =&gt; Fri, 12 Feb 2016 03:00:00 UTC +03:00
+
+user = User.new
+user.confirmed_at = '2016/02/12'
+user.confirmed_at
+# =&gt; Fri, 12 Feb 2016 00:00:00 UTC +03:00
+</code></pre>
+
+<h3>Свой обработчик ActiveRecord Attributes</h3>
+
+<p>Допустим у нас есть модель <code>Transaction</code>, и в поле цена, к нам приходит строка в виде <code>$100</code>,
+а мы хотим сохранять в базу данных значение в центах, и цифрой, а также использовать строку в запросах.</p>
+
+<p>Для решения этой задачи, нам необходимо добавить свой тип данных, и в этом <code>Attributes</code> нам поможет.
+Создадим класс <code>MoneyType</code>, и напишем свой метод <code>type_cast</code>, который используется для преобразования данных.</p>
+
+<pre><code class="ruby">class MoneyType &lt; ActiveRecord::Type::Integer
+  def type_cast(value)
+    if value.include?('$')
+      price_in_dollars = value.gsub(/\$/, '').to_f
+      price_in_dollars * 100
+    else
+      value.to_i
+    end
+  end
+end
+</code></pre>
+
+<p>Укажем обработчик для колонки <code>price</code></p>
+
+<pre><code class="ruby">class Transaction &lt; ActiveRecord::Base
+  attribute :price, MoneyType.new
+end
+</code></pre>
+
+<p>Если все сделали верно, то теперь мы можем делать вот такие запросы, и быть уверенными что все отработает как надо</p>
+
+<pre><code class="ruby">Transaction.where(price: '$10.00')
+# =&gt; SELECT * FROM transactions WHERE price = 1000
+</code></pre>
+
+<p>Как видите очень удобно и просто. Возьмите на заметку :)</p>
+]]></content>
+  </entry>
   
   <entry>
     <title type="html"><![CDATA[Кэширование коллекций в Rails 5]]></title>

@@ -1,0 +1,468 @@
+
+<!DOCTYPE html>
+<!--[if IEMobile 7 ]><html class="no-js iem7"><![endif]-->
+<!--[if lt IE 9]><html class="no-js lte-ie8"><![endif]-->
+<!--[if (gt IE 8)|(gt IEMobile 7)|!(IEMobile)|!(IE)]><!--><html class="no-js" lang="en"><!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  <title>ActiveRecord Attributes в Rails 5 - Gururuby.ru | Блог Ruby-разработчика</title>
+  <meta name="author" content="Gururuby.ru">
+
+  
+  <meta name="description" content="В Rails 5 много нововведений, одним из них является ActiveRecord Attributes.
+Эта фича позволяет добавлять аттрибут в модель Rails и обработать его &hellip;">
+  
+
+  <!-- http://t.co/dKP3o1e -->
+  <meta name="HandheldFriendly" content="True">
+  <meta name="MobileOptimized" content="320">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  
+  <link rel="canonical" href="http://gururuby.ru/blog/2016/02/11/rails-5-attributes/">
+  <link href="/favicon.png" rel="icon">
+  <link href="/stylesheets/screen.css" media="screen, projection" rel="stylesheet" type="text/css">
+  <link href="/atom.xml" rel="alternate" title="Gururuby.ru | Блог Ruby-разработчика" type="application/atom+xml">
+  <script src="/javascripts/modernizr-2.0.js"></script>
+  <script src="//ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js"></script>
+  <script>!window.jQuery && document.write(unescape('%3Cscript src="/javascripts/libs/jquery.min.js"%3E%3C/script%3E'))</script>
+  <script src="/javascripts/octopress.js" type="text/javascript"></script>
+  <!--Fonts from Google"s Web font directory at http://google.com/webfonts -->
+<link href="//fonts.googleapis.com/css?family=PT+Serif:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
+<link href="//fonts.googleapis.com/css?family=PT+Sans:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
+
+  
+  <script type="text/javascript">
+    var _gaq = _gaq || [];
+    _gaq.push(['_setAccount', 'UA-54692220-1']);
+    _gaq.push(['_trackPageview']);
+
+    (function() {
+      var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
+      ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+      var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
+    })();
+  </script>
+
+
+</head>
+
+<body   >
+  <header role="banner"><a href="/">
+  <img src="/images/logo.png" width="180" />
+</a>
+<hgroup>
+  <!--<h1><a href="/">Gururuby.ru | Блог Ruby-разработчика</a></h1>-->
+  
+  <h2>Блог Ruby-разработчика</h2>
+  
+</hgroup>
+
+</header>
+  <nav role="navigation"><ul class="subscription" data-subscription="rss">
+  <li><a href="/atom.xml" rel="subscribe-rss" title="subscribe via RSS">RSS</a></li>
+  
+</ul>
+  
+<form action="https://www.google.com/search" method="get">
+  <fieldset role="search">
+    <input type="hidden" name="sitesearch" value="gururuby.ru">
+    <input class="search" type="text" name="q" results="0" placeholder="Search"/>
+  </fieldset>
+</form>
+  
+<ul class="main-navigation">
+  <li><a href="/">Записи</a></li>
+  <li><a href="/blog/archives">Архивы</a></li>
+</ul>
+
+</nav>
+  <div id="main">
+    <div id="content">
+      <div>
+<article class="hentry" role="article">
+  
+  <header>
+    
+      <h1 class="entry-title">ActiveRecord Attributes в Rails 5</h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+<time class='entry-date' datetime='2016-02-11T10:40:46+03:00'><span class='date'>11/02/2016</span> <span class='time'>10:40 am</span></time>
+        
+           | <a href="#disqus_thread"
+             data-disqus-identifier="http://gururuby.ru">Comments</a>
+        
+      </p>
+    
+  </header>
+
+
+<div class="entry-content"><p><img class="center" src="/images/rails5.jpg"></p>
+
+<p>В Rails 5 много нововведений, одним из них является ActiveRecord Attributes.
+Эта фича позволяет добавлять аттрибут в модель Rails и обработать его согласно указанному типу.
+Посмотрим насколько полезен этот новый функционал.</p>
+
+<!-- more -->
+
+
+<p>Рассмотрим пример. У нас есть модель пользователей - User. Миграция и сама модель описаны ниже.</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+</pre></td><td class='code'><pre><code class='ruby'><span class='line'><span class="k">class</span> <span class="nc">CreateUsers</span> <span class="o">&lt;</span> <span class="no">ActiveRecord</span><span class="o">::</span><span class="no">Migration</span>
+</span><span class='line'>  <span class="k">def</span> <span class="nf">change</span>
+</span><span class='line'>    <span class="n">create_table</span> <span class="ss">:users</span> <span class="k">do</span> <span class="o">|</span><span class="n">t</span><span class="o">|</span>
+</span><span class='line'>      <span class="n">t</span><span class="o">.</span><span class="n">string</span> <span class="ss">:name</span>
+</span><span class='line'>      <span class="n">t</span><span class="o">.</span><span class="n">integer</span> <span class="ss">:age</span>
+</span><span class='line'>      <span class="n">t</span><span class="o">.</span><span class="n">string</span> <span class="ss">:male</span>
+</span><span class='line'>      <span class="n">t</span><span class="o">.</span><span class="n">timestamps</span><span class="p">(</span><span class="ss">null</span><span class="p">:</span> <span class="kp">false</span><span class="p">)</span>
+</span><span class='line'>    <span class="k">end</span>
+</span><span class='line'>  <span class="k">end</span>
+</span><span class='line'><span class="k">end</span>
+</span><span class='line'>
+</span><span class='line'><span class="k">class</span> <span class="nc">User</span> <span class="o">&lt;</span> <span class="no">ActiveRecord</span><span class="o">::</span><span class="no">Base</span>
+</span><span class='line'><span class="k">end</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>Обратите внимание на колонку <code>male</code>, мы могли бы вполне сделать ее с типом <code>boolean</code>, но в данном примере это сделано специально,
+чтобы показать как мы сможем использовать Attributes.</p>
+
+<p>Хотя бывают и реальные случаи, когда изначально в архитектуре проекта был неверно выбран
+тип данных, и по прошествии времени, изменение типа будет болезненным.</p>
+
+<p>Давайте воспользуемся нововведением. Укажем колонку <code>male</code> как аттрибут, с типом <code>boolean</code></p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+</pre></td><td class='code'><pre><code class='ruby'><span class='line'><span class="k">class</span> <span class="nc">User</span> <span class="o">&lt;</span> <span class="no">ActiveRecord</span><span class="o">::</span><span class="no">Base</span>
+</span><span class='line'>  <span class="n">attribute</span> <span class="ss">:male</span><span class="p">,</span> <span class="ss">:boolean</span>
+</span><span class='line'><span class="k">end</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>Теперь мы можем использовать колонку так, как будто ее тип <code>boolean</code>, например:</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+</pre></td><td class='code'><pre><code class='ruby'><span class='line'><span class="n">user</span> <span class="o">=</span> <span class="no">User</span><span class="o">.</span><span class="n">new</span><span class="p">(</span><span class="ss">male</span><span class="p">:</span> <span class="s1">&#39;yes&#39;</span><span class="p">)</span>
+</span><span class='line'><span class="n">user</span><span class="o">.</span><span class="n">male</span>
+</span><span class='line'><span class="c1"># =&gt; true</span>
+</span><span class='line'>
+</span><span class='line'><span class="n">user</span> <span class="o">=</span> <span class="no">User</span><span class="o">.</span><span class="n">new</span><span class="p">(</span><span class="ss">male</span><span class="p">:</span> <span class="s1">&#39;f&#39;</span><span class="p">)</span>
+</span><span class='line'><span class="n">user</span><span class="o">.</span><span class="n">male</span>
+</span><span class='line'><span class="c1"># =&gt; false</span>
+</span><span class='line'>
+</span><span class='line'><span class="n">user</span> <span class="o">=</span> <span class="no">User</span><span class="o">.</span><span class="n">new</span><span class="p">(</span><span class="ss">male</span><span class="p">:</span> <span class="mi">0</span><span class="p">)</span>
+</span><span class='line'><span class="n">user</span><span class="o">.</span><span class="n">male</span>
+</span><span class='line'><span class="c1"># =&gt; false</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>Вот так легко теперь можно решить проблему несовместимости типов данных указанных в таблице БД и требований согласно бизнес логике.
+ActiveRecord Attributes поддерживает основные типы данных, ниже список:</p>
+
+<ul>
+<li>:big_integer</li>
+<li>:binary</li>
+<li>:boolean</li>
+<li>:date</li>
+<li>:date_time</li>
+<li>:decimal</li>
+<li>:float</li>
+<li>:integer</li>
+<li>:string</li>
+<li>:text</li>
+<li>:time</li>
+</ul>
+
+
+<p>Аттрибут не обязательно может быть колонкой в таблице, можно применять его и для обычных аттрибутов модели.
+Добавим для модели <code>User</code> аттрибут <code>confirmed_at</code>, и укажем тип данных <code>:date_time</code>, и все будет корректно
+обрабатываться. При этом мы не указываем аттрибут через <code>attr_accessor</code>.</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+</pre></td><td class='code'><pre><code class='ruby'><span class='line'><span class="k">class</span> <span class="nc">User</span>
+</span><span class='line'>  <span class="n">attribute</span> <span class="ss">:confirmed_at</span><span class="p">,</span> <span class="ss">:date_time</span>
+</span><span class='line'><span class="k">end</span>
+</span><span class='line'>
+</span><span class='line'><span class="n">user</span> <span class="o">=</span> <span class="no">User</span><span class="o">.</span><span class="n">new</span>
+</span><span class='line'><span class="n">user</span><span class="o">.</span><span class="n">confirmed_at</span> <span class="o">=</span> <span class="s1">&#39;2016-02-12 03:00&#39;</span>
+</span><span class='line'><span class="n">user</span><span class="o">.</span><span class="n">confirmed_at</span>
+</span><span class='line'><span class="c1"># =&gt; Fri, 12 Feb 2016 03:00:00 UTC +03:00</span>
+</span><span class='line'>
+</span><span class='line'><span class="n">user</span> <span class="o">=</span> <span class="no">User</span><span class="o">.</span><span class="n">new</span>
+</span><span class='line'><span class="n">user</span><span class="o">.</span><span class="n">confirmed_at</span> <span class="o">=</span> <span class="s1">&#39;2016/02/12&#39;</span>
+</span><span class='line'><span class="n">user</span><span class="o">.</span><span class="n">confirmed_at</span>
+</span><span class='line'><span class="c1"># =&gt; Fri, 12 Feb 2016 00:00:00 UTC +03:00</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<h3>Свой обработчик ActiveRecord Attributes</h3>
+
+<p>Допустим у нас есть модель <code>Transaction</code>, и в поле цена, к нам приходит строка в виде <code>$100</code>,
+а мы хотим сохранять в базу данных значение в центах, и цифрой, а также использовать строку в запросах.</p>
+
+<p>Для решения этой задачи, нам необходимо добавить свой тип данных, и в этом <code>Attributes</code> нам поможет.
+Создадим класс <code>MoneyType</code>, и напишем свой метод <code>type_cast</code>, который используется для преобразования данных.</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+</pre></td><td class='code'><pre><code class='ruby'><span class='line'><span class="k">class</span> <span class="nc">MoneyType</span> <span class="o">&lt;</span> <span class="no">ActiveRecord</span><span class="o">::</span><span class="no">Type</span><span class="o">::</span><span class="nb">Integer</span>
+</span><span class='line'>  <span class="k">def</span> <span class="nf">type_cast</span><span class="p">(</span><span class="n">value</span><span class="p">)</span>
+</span><span class='line'>    <span class="k">if</span> <span class="n">value</span><span class="o">.</span><span class="n">include?</span><span class="p">(</span><span class="s1">&#39;$&#39;</span><span class="p">)</span>
+</span><span class='line'>      <span class="n">price_in_dollars</span> <span class="o">=</span> <span class="n">value</span><span class="o">.</span><span class="n">gsub</span><span class="p">(</span><span class="sr">/\$/</span><span class="p">,</span> <span class="s1">&#39;&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">to_f</span>
+</span><span class='line'>      <span class="n">price_in_dollars</span> <span class="o">*</span> <span class="mi">100</span>
+</span><span class='line'>    <span class="k">else</span>
+</span><span class='line'>      <span class="n">value</span><span class="o">.</span><span class="n">to_i</span>
+</span><span class='line'>    <span class="k">end</span>
+</span><span class='line'>  <span class="k">end</span>
+</span><span class='line'><span class="k">end</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>Укажем обработчик для колонки <code>price</code></p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+</pre></td><td class='code'><pre><code class='ruby'><span class='line'><span class="k">class</span> <span class="nc">Transaction</span> <span class="o">&lt;</span> <span class="no">ActiveRecord</span><span class="o">::</span><span class="no">Base</span>
+</span><span class='line'>  <span class="n">attribute</span> <span class="ss">:price</span><span class="p">,</span> <span class="no">MoneyType</span><span class="o">.</span><span class="n">new</span>
+</span><span class='line'><span class="k">end</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>Если все сделали верно, то теперь мы можем делать вот такие запросы, и быть уверенными что все отработает как надо</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+</pre></td><td class='code'><pre><code class='ruby'><span class='line'><span class="no">Transaction</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="ss">price</span><span class="p">:</span> <span class="s1">&#39;$10.00&#39;</span><span class="p">)</span>
+</span><span class='line'><span class="c1"># =&gt; SELECT * FROM transactions WHERE price = 1000</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>Как видите очень удобно и просто. Возьмите на заметку :)</p>
+</div>
+
+
+  <footer>
+    <p class="meta">
+      
+  
+
+<span class="byline author vcard">Опубликовано <span class="fn">Gururuby.ru</span></span>
+
+      
+
+
+
+
+<time class='entry-date' datetime='2016-02-11T10:40:46+03:00'><span class='date'>11/02/2016</span> <span class='time'>10:40 am</span></time>
+      
+
+<span class="categories">
+  
+    <a class='category' href='/blog/categories/activerecord/'>activerecord</a>, <a class='category' href='/blog/categories/attributes/'>attributes</a>, <a class='category' href='/blog/categories/rails-5/'>rails 5</a>, <a class='category' href='/blog/categories/ruby-on-rails/'>ruby on rails</a>
+  
+</span>
+
+
+    </p>
+    
+      <div class="sharing">
+  
+  <a href="//twitter.com/share" class="twitter-share-button" data-url="http://gururuby.ru/blog/2016/02/11/rails-5-attributes/" data-via="" data-counturl="http://gururuby.ru/blog/2016/02/11/rails-5-attributes/" >Tweet</a>
+  
+  
+  
+    <div class="fb-like" data-send="true" data-width="450" data-show-faces="false"></div>
+  
+</div>
+
+    
+    <p class="meta">
+      
+        <a class="basic-alignment left" href="/blog/2016/02/07/activerecord-relation-cache-key/" title="Previous Post: Кэширование коллекций в Rails 5">&laquo; Кэширование коллекций в Rails 5</a>
+      
+      
+    </p>
+  </footer>
+</article>
+
+  <section>
+    <h1>Comments</h1>
+    <div id="disqus_thread" aria-live="polite"><noscript>Please enable JavaScript to view the <a href="http://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+</div>
+  </section>
+
+</div>
+
+<aside class="sidebar">
+  
+    <section>
+  <h1>Свежие записи</h1>
+  <ul id="recent_posts">
+    
+      <li class="post">
+        <a href="/blog/2016/02/11/rails-5-attributes/">ActiveRecord Attributes в Rails 5</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2016/02/07/activerecord-relation-cache-key/">Кэширование коллекций в Rails 5</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2016/01/29/stubbing-external-services/">Тестируем внешние сервисы легко!</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2015/12/30/happy_new_year_2016/">С наступающим Новым 2016 годом!</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2015/12/18/simple-chat-via-action-cable/">Простой чат с помощью ActionCable</a>
+      </li>
+    
+  </ul>
+</section>
+<section>
+    <h1>Категории</h1>
+    <span id="tag-cloud"><a href='/blog/categories/actioncable' style='font-size: 75.0%'>actioncable</a> <a href='/blog/categories/activerecord' style='font-size: 90.0%'>activerecord</a> <a href='/blog/categories/api' style='font-size: 75.0%'>api</a> <a href='/blog/categories/attributes' style='font-size: 75.0%'>attributes</a> <a href='/blog/categories/other' style='font-size: 75.0%'>other</a> <a href='/blog/categories/rails-5' style='font-size: 90.0%'>rails 5</a> <a href='/blog/categories/ruby' style='font-size: 90.0%'>ruby</a> <a href='/blog/categories/ruby-on-rails' style='font-size: 120.0%'>ruby on rails</a> <a href='/blog/categories/ruby-2-dot-3' style='font-size: 75.0%'>ruby-2.3</a> <a href='/blog/categories/vcr' style='font-size: 75.0%'>vcr</a> <a href='/blog/categories/webmock' style='font-size: 75.0%'>webmock</a> <a href='/blog/categories/websocket' style='font-size: 75.0%'>websocket</a> <a href='/blog/categories/keshirovaniie' style='font-size: 75.0%'>кэширование</a> <a href='/blog/categories/tiestirovaniie' style='font-size: 75.0%'>тестирование</a> </span>
+</section>
+
+  
+</aside>
+
+
+    </div>
+  </div>
+  <footer role="contentinfo"><p>
+  Copyright &copy; 2016 - Gururuby.ru -
+  <span class="credit">Powered by <a href="http://octopress.org">Octopress</a></span>
+</p>
+
+</footer>
+  
+
+<script type="text/javascript">
+      var disqus_shortname = 'gururuby';
+      
+        
+        // var disqus_developer = 1;
+        var disqus_identifier = 'http://gururuby.ru/blog/2016/02/11/rails-5-attributes/';
+        var disqus_url = 'http://gururuby.ru/blog/2016/02/11/rails-5-attributes/';
+        var disqus_script = 'embed.js';
+      
+    (function () {
+      var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
+      dsq.src = '//' + disqus_shortname + '.disqus.com/' + disqus_script;
+      (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+    }());
+</script>
+
+
+
+<div id="fb-root"></div>
+<script>(function(d, s, id) {
+  var js, fjs = d.getElementsByTagName(s)[0];
+  if (d.getElementById(id)) {return;}
+  js = d.createElement(s); js.id = id; js.async = true;
+  js.src = "//connect.facebook.net/en_US/all.js#appId=212934732101925&xfbml=1";
+  fjs.parentNode.insertBefore(js, fjs);
+}(document, 'script', 'facebook-jssdk'));</script>
+
+
+
+
+
+  <script type="text/javascript">
+    (function(){
+      var twitterWidgets = document.createElement('script');
+      twitterWidgets.type = 'text/javascript';
+      twitterWidgets.async = true;
+      twitterWidgets.src = '//platform.twitter.com/widgets.js';
+      document.getElementsByTagName('head')[0].appendChild(twitterWidgets);
+    })();
+  </script>
+
+
+
+<!-- Yandex.Metrika counter -->
+<script type="text/javascript">
+  (function (d, w, c) {
+    (w[c] = w[c] || []).push(function() {
+      try {
+        w.yaCounter35016535 = new Ya.Metrika({
+          id:35016535,
+          clickmap:true,
+          trackLinks:true,
+          accurateTrackBounce:true
+        });
+      } catch(e) { }
+    });
+
+    var n = d.getElementsByTagName("script")[0],
+            s = d.createElement("script"),
+            f = function () { n.parentNode.insertBefore(s, n); };
+    s.type = "text/javascript";
+    s.async = true;
+    s.src = "https://mc.yandex.ru/metrika/watch.js";
+
+    if (w.opera == "[object Opera]") {
+      d.addEventListener("DOMContentLoaded", f, false);
+    } else { f(); }
+  })(document, window, "yandex_metrika_callbacks");
+</script>
+<noscript><div><img src="https://mc.yandex.ru/watch/35016535" style="position:absolute; left:-9999px;" alt="" /></div></noscript>
+<!-- /Yandex.Metrika counter -->
+
+</body>
+</html>
