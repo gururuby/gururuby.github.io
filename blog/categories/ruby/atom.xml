@@ -4,7 +4,7 @@
   <title><![CDATA[Category: Ruby | Gururuby.ru | Блог Ruby-разработчика]]></title>
   <link href="http://gururuby.ru/blog/categories/ruby/atom.xml" rel="self"/>
   <link href="http://gururuby.ru/"/>
-  <updated>2016-02-12T02:01:38+03:00</updated>
+  <updated>2016-02-24T11:28:21+03:00</updated>
   <id>http://gururuby.ru/</id>
   <author>
     <name><![CDATA[Gururuby.ru]]></name>
@@ -12,6 +12,18 @@
   </author>
   <generator uri="http://octopress.org/">Octopress</generator>
 
+  
+  <entry>
+    <title type="html"><![CDATA[Божественный Ruby. Проповедь 1]]></title>
+    <link href="http://gururuby.ru/blog/2016/02/24/lesson-1-oop-and-ruby/"/>
+    <updated>2016-02-24T10:40:46+03:00</updated>
+    <id>http://gururuby.ru/blog/2016/02/24/lesson-1-oop-and-ruby</id>
+    <content type="html"><![CDATA[<iframe width="770" height="320" src="https://www.youtube.com/embed/mICGqoexnls" frameborder="0" allowfullscreen></iframe>
+
+
+<p>Серия видеоуроков по Ruby, решил начать с объяснения своими словами ООП, в конце немного о Ruby.</p>
+]]></content>
+  </entry>
   
   <entry>
     <title type="html"><![CDATA[С наступающим Новым 2016 годом!]]></title>
