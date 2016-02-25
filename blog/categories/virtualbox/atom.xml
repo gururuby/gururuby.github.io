@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <feed xmlns="http://www.w3.org/2005/Atom">
 
-  <title><![CDATA[Category: видеоуроки | Gururuby.ru | Блог Ruby-разработчика]]></title>
-  <link href="http://gururuby.ru/blog/categories/vidieouroki/atom.xml" rel="self"/>
+  <title><![CDATA[Category: Virtualbox | Gururuby.ru | Блог Ruby-разработчика]]></title>
+  <link href="http://gururuby.ru/blog/categories/virtualbox/atom.xml" rel="self"/>
   <link href="http://gururuby.ru/"/>
   <updated>2016-02-25T17:17:01+03:00</updated>
   <id>http://gururuby.ru/</id>
@@ -22,18 +22,6 @@
 с помощью VirtualBox</p>
 
 <iframe width="770" height="320" src="https://www.youtube.com/embed/C03WnMS5YcM" frameborder="0" allowfullscreen></iframe>
-
-]]></content>
-  </entry>
-  
-  <entry>
-    <title type="html"><![CDATA[Божественный Ruby. Проповедь 1]]></title>
-    <link href="http://gururuby.ru/blog/2016/02/24/lesson-1-oop-and-ruby/"/>
-    <updated>2016-02-24T10:40:46+03:00</updated>
-    <id>http://gururuby.ru/blog/2016/02/24/lesson-1-oop-and-ruby</id>
-    <content type="html"><![CDATA[<p>Серия видеоуроков по Ruby, решил начать с объяснения своими словами ООП, в конце немного о Ruby.</p>
-
-<iframe width="770" height="320" src="https://www.youtube.com/embed/mICGqoexnls" frameborder="0" allowfullscreen></iframe>
 
 ]]></content>
   </entry>

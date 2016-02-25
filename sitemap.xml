@@ -2,7 +2,7 @@
 <urlset xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.sitemaps.org/schemas/sitemap/0.9 http://www.sitemaps.org/schemas/sitemap/0.9/sitemap.xsd" xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url>
     <loc>http://gururuby.ru/blog/2016/02/25/lesson-2-setup-environment/</loc>
-    <lastmod>2016-02-25T00:00:00+03:00</lastmod>
+    <lastmod>2016-02-25T10:40:46+03:00</lastmod>
   </url>
   <url>
     <loc>http://gururuby.ru/blog/2016/02/24/lesson-1-oop-and-ruby/</loc>
@@ -88,5 +88,11 @@
   </url>
   <url>
     <loc>http://gururuby.ru/blog/categories/dlia-nachinaiushchikh/</loc>
+  </url>
+  <url>
+    <loc>http://gururuby.ru/blog/categories/virtualbox/</loc>
+  </url>
+  <url>
+    <loc>http://gururuby.ru/blog/categories/ubuntu-14-dot-04/</loc>
   </url>
 </urlset>
