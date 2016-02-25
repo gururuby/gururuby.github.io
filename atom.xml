@@ -4,7 +4,7 @@
   <title><![CDATA[Gururuby.ru | Блог Ruby-разработчика]]></title>
   <link href="http://gururuby.ru/atom.xml" rel="self"/>
   <link href="http://gururuby.ru/"/>
-  <updated>2016-02-24T11:28:21+03:00</updated>
+  <updated>2016-02-25T17:16:08+03:00</updated>
   <id>http://gururuby.ru/</id>
   <author>
     <name><![CDATA[Gururuby.ru]]></name>
@@ -12,6 +12,28 @@
   </author>
   <generator uri="http://octopress.org/">Octopress</generator>
 
+  
+  <entry>
+    <title type="html"><![CDATA[Lesson 2 Setup Environment]]></title>
+    <link href="http://gururuby.ru/blog/2016/02/25/lesson-2-setup-environment/"/>
+    <updated>2016-02-25T00:00:00+03:00</updated>
+    <id>http://gururuby.ru/blog/2016/02/25/lesson-2-setup-environment</id>
+    <content type="html"><![CDATA[<hr />
+
+<p>layout: post
+title: &ldquo;Божественный Ruby. Проповедь 2&rdquo;
+date: 2016-02-25 10:40:46 +0300
+comments: true</p>
+
+<h2>categories: [Ruby, видеоуроки, для начинающих, VirtualBox, Ubuntu 14.04]</h2>
+
+<p>В этом уроке, о том какое окружение выбрать, какую операционную систему использовать и почему, а также установим Ubuntu 14.04
+с помощью VirtualBox</p>
+
+<iframe width="770" height="320" src="https://www.youtube.com/embed/C03WnMS5YcM" frameborder="0" allowfullscreen></iframe>
+
+]]></content>
+  </entry>
   
   <entry>
     <title type="html"><![CDATA[Божественный Ruby. Проповедь 1]]></title>
