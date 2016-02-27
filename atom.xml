@@ -4,7 +4,7 @@
   <title><![CDATA[Gururuby.ru | Блог Ruby-разработчика]]></title>
   <link href="http://gururuby.ru/atom.xml" rel="self"/>
   <link href="http://gururuby.ru/"/>
-  <updated>2016-02-25T17:17:01+03:00</updated>
+  <updated>2016-02-27T16:08:40+03:00</updated>
   <id>http://gururuby.ru/</id>
   <author>
     <name><![CDATA[Gururuby.ru]]></name>
@@ -12,6 +12,106 @@
   </author>
   <generator uri="http://octopress.org/">Octopress</generator>
 
+  
+  <entry>
+    <title type="html"><![CDATA[Rails 5 использование #belongs_to]]></title>
+    <link href="http://gururuby.ru/blog/2016/02/27/rails5-belongs-to-required/"/>
+    <updated>2016-02-27T10:40:46+03:00</updated>
+    <id>http://gururuby.ru/blog/2016/02/27/rails5-belongs-to-required</id>
+    <content type="html"><![CDATA[<p>В Rails 5 при указании <code>belongs_to</code> в модели, невозможно будет сохранить запись без наличия ассоциированного объекта.
+Раньше эта опция также существовала, и теперь она включена по дефолту.</p>
+
+<!-- more -->
+
+
+<p>Рассмотрим пример:</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+</pre></td><td class='code'><pre><code class='ruby'><span class='line'><span class="k">class</span> <span class="nc">User</span> <span class="o">&lt;</span> <span class="no">ApplicationRecord</span>
+</span><span class='line'><span class="k">end</span>
+</span><span class='line'>
+</span><span class='line'><span class="k">class</span> <span class="nc">Post</span> <span class="o">&lt;</span> <span class="no">ApplicationRecord</span>
+</span><span class='line'>  <span class="n">belongs_to</span> <span class="ss">:user</span>
+</span><span class='line'><span class="k">end</span>
+</span><span class='line'>
+</span><span class='line'><span class="n">post</span> <span class="o">=</span> <span class="no">Post</span><span class="o">.</span><span class="n">create</span><span class="p">(</span><span class="ss">title</span><span class="p">:</span> <span class="s1">&#39;Hi&#39;</span><span class="p">)</span>
+</span><span class='line'>  <span class="o">=&gt;</span> <span class="o">&lt;</span><span class="no">Post</span> <span class="nb">id</span><span class="p">:</span> <span class="kp">nil</span><span class="p">,</span> <span class="ss">title</span><span class="p">:</span> <span class="s2">&quot;Hi&quot;</span><span class="p">,</span> <span class="ss">user_id</span><span class="p">:</span> <span class="kp">nil</span><span class="p">,</span> <span class="ss">created_at</span><span class="p">:</span> <span class="kp">nil</span><span class="p">,</span> <span class="ss">updated_at</span><span class="p">:</span> <span class="kp">nil</span><span class="o">&gt;</span>
+</span><span class='line'>
+</span><span class='line'><span class="n">post</span><span class="o">.</span><span class="n">errors</span><span class="o">.</span><span class="n">full_messages</span><span class="o">.</span><span class="n">to_sentence</span>
+</span><span class='line'>  <span class="o">=&gt;</span> <span class="s2">&quot;User must exist&quot;</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>В Rails 4.x добиться такого поведения можно, указав дополнительную опцию в вызов метода</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+</pre></td><td class='code'><pre><code class='ruby'><span class='line'><span class="k">class</span> <span class="nc">User</span> <span class="o">&lt;</span> <span class="no">ActiveRecord</span><span class="o">::</span><span class="no">Base</span>
+</span><span class='line'><span class="k">end</span>
+</span><span class='line'>
+</span><span class='line'><span class="k">class</span> <span class="nc">Post</span> <span class="o">&lt;</span> <span class="no">ActiveRecord</span><span class="o">::</span><span class="no">Base</span>
+</span><span class='line'>  <span class="n">belongs_to</span> <span class="ss">:user</span><span class="p">,</span> <span class="ss">required</span><span class="p">:</span> <span class="kp">true</span>
+</span><span class='line'><span class="k">end</span>
+</span><span class='line'>
+</span><span class='line'><span class="n">post</span> <span class="o">=</span> <span class="no">Post</span><span class="o">.</span><span class="n">create</span><span class="p">(</span><span class="ss">title</span><span class="p">:</span> <span class="s1">&#39;Hi&#39;</span><span class="p">)</span>
+</span><span class='line'><span class="o">=&gt;</span> <span class="o">&lt;</span><span class="no">Post</span> <span class="nb">id</span><span class="p">:</span> <span class="kp">nil</span><span class="p">,</span> <span class="ss">title</span><span class="p">:</span> <span class="s2">&quot;Hi&quot;</span><span class="p">,</span> <span class="ss">user_id</span><span class="p">:</span> <span class="kp">nil</span><span class="p">,</span> <span class="ss">created_at</span><span class="p">:</span> <span class="kp">nil</span><span class="p">,</span> <span class="ss">updated_at</span><span class="p">:</span> <span class="kp">nil</span><span class="o">&gt;</span>
+</span><span class='line'>
+</span><span class='line'><span class="n">post</span><span class="o">.</span><span class="n">errors</span><span class="o">.</span><span class="n">full_messages</span><span class="o">.</span><span class="n">to_sentence</span>
+</span><span class='line'><span class="o">=&gt;</span> <span class="s2">&quot;User must exist&quot;</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>Вернуть дефолтное поведение в Rails 5 можно, передав опцию <code>optional: true</code> в вызове метода</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+</pre></td><td class='code'><pre><code class='ruby'><span class='line'><span class="k">class</span> <span class="nc">Post</span> <span class="o">&lt;</span> <span class="no">ApplicationRecord</span>
+</span><span class='line'>  <span class="n">belongs_to</span> <span class="ss">:user</span><span class="p">,</span> <span class="ss">optional</span><span class="p">:</span> <span class="kp">true</span>
+</span><span class='line'><span class="k">end</span>
+</span><span class='line'>
+</span><span class='line'><span class="n">post</span> <span class="o">=</span> <span class="no">Post</span><span class="o">.</span><span class="n">create</span><span class="p">(</span><span class="ss">title</span><span class="p">:</span> <span class="s1">&#39;Hi&#39;</span><span class="p">)</span>
+</span><span class='line'><span class="o">=&gt;</span> <span class="o">&lt;</span><span class="no">Post</span> <span class="nb">id</span><span class="p">:</span> <span class="mi">2</span><span class="p">,</span> <span class="ss">title</span><span class="p">:</span> <span class="s2">&quot;Hi&quot;</span><span class="p">,</span> <span class="ss">user_id</span><span class="p">:</span> <span class="kp">nil</span><span class="o">&gt;</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>Для того чтобы вернуть старое поведение для всего проекта, идем в папку <code>initializers</code>  нашего проекта,
+и видим что в Rails 5 появился новый файл под названием <code>active_record_belongs_to_required_by_default.rb</code>
+И именно в нем видим настройку, которая отвечает за новое поведение. Мы можем установить ее в <code>false</code>,
+чтобы отключить его.</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class='ruby'><span class='line'><span class="no">Rails</span><span class="o">.</span><span class="n">application</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">active_record</span><span class="o">.</span><span class="n">belongs_to_required_by_default</span> <span class="o">=</span> <span class="kp">false</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>Напомню, что данный файл создается при новой установке Rails 5, в том случае если вы обновляете Rails до версии 5, создайте его вручную.</p>
+]]></content>
+  </entry>
   
   <entry>
     <title type="html"><![CDATA[Божественный Ruby. Проповедь 2]]></title>

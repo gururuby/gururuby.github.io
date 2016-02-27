@@ -4,7 +4,7 @@
   <title><![CDATA[Category: Ruby on Rails | Gururuby.ru | Блог Ruby-разработчика]]></title>
   <link href="http://gururuby.ru/blog/categories/ruby-on-rails/atom.xml" rel="self"/>
   <link href="http://gururuby.ru/"/>
-  <updated>2016-02-25T17:17:01+03:00</updated>
+  <updated>2016-02-27T16:08:40+03:00</updated>
   <id>http://gururuby.ru/</id>
   <author>
     <name><![CDATA[Gururuby.ru]]></name>
@@ -12,6 +12,71 @@
   </author>
   <generator uri="http://octopress.org/">Octopress</generator>
 
+  
+  <entry>
+    <title type="html"><![CDATA[Rails 5 использование #belongs_to]]></title>
+    <link href="http://gururuby.ru/blog/2016/02/27/rails5-belongs-to-required/"/>
+    <updated>2016-02-27T10:40:46+03:00</updated>
+    <id>http://gururuby.ru/blog/2016/02/27/rails5-belongs-to-required</id>
+    <content type="html"><![CDATA[<p>В Rails 5 при указании <code>belongs_to</code> в модели, невозможно будет сохранить запись без наличия ассоциированного объекта.
+Раньше эта опция также существовала, и теперь она включена по дефолту.</p>
+
+<!-- more -->
+
+
+<p>Рассмотрим пример:</p>
+
+<pre><code class="ruby">class User &lt; ApplicationRecord
+end
+
+class Post &lt; ApplicationRecord
+  belongs_to :user
+end
+
+post = Post.create(title: 'Hi')
+  =&gt; &lt;Post id: nil, title: "Hi", user_id: nil, created_at: nil, updated_at: nil&gt;
+
+post.errors.full_messages.to_sentence
+  =&gt; "User must exist"
+</code></pre>
+
+<p>В Rails 4.x добиться такого поведения можно, указав дополнительную опцию в вызов метода</p>
+
+<pre><code class="ruby">class User &lt; ActiveRecord::Base
+end
+
+class Post &lt; ActiveRecord::Base
+  belongs_to :user, required: true
+end
+
+post = Post.create(title: 'Hi')
+=&gt; &lt;Post id: nil, title: "Hi", user_id: nil, created_at: nil, updated_at: nil&gt;
+
+post.errors.full_messages.to_sentence
+=&gt; "User must exist"
+</code></pre>
+
+<p>Вернуть дефолтное поведение в Rails 5 можно, передав опцию <code>optional: true</code> в вызове метода</p>
+
+<pre><code class="ruby">class Post &lt; ApplicationRecord
+  belongs_to :user, optional: true
+end
+
+post = Post.create(title: 'Hi')
+=&gt; &lt;Post id: 2, title: "Hi", user_id: nil&gt;
+</code></pre>
+
+<p>Для того чтобы вернуть старое поведение для всего проекта, идем в папку <code>initializers</code>  нашего проекта,
+и видим что в Rails 5 появился новый файл под названием <code>active_record_belongs_to_required_by_default.rb</code>
+И именно в нем видим настройку, которая отвечает за новое поведение. Мы можем установить ее в <code>false</code>,
+чтобы отключить его.</p>
+
+<pre><code class="ruby ">Rails.application.config.active_record.belongs_to_required_by_default = false
+</code></pre>
+
+<p>Напомню, что данный файл создается при новой установке Rails 5, в том случае если вы обновляете Rails до версии 5, создайте его вручную.</p>
+]]></content>
+  </entry>
   
   <entry>
     <title type="html"><![CDATA[ActiveRecord Attributes в Rails 5]]></title>
