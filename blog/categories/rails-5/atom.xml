@@ -4,7 +4,7 @@
   <title><![CDATA[Category: Rails 5 | Gururuby.ru | Блог Ruby-разработчика]]></title>
   <link href="http://gururuby.ru/blog/categories/rails-5/atom.xml" rel="self"/>
   <link href="http://gururuby.ru/"/>
-  <updated>2016-02-27T16:08:40+03:00</updated>
+  <updated>2016-03-03T23:00:57+03:00</updated>
   <id>http://gururuby.ru/</id>
   <author>
     <name><![CDATA[Gururuby.ru]]></name>
@@ -12,6 +12,63 @@
   </author>
   <generator uri="http://octopress.org/">Octopress</generator>
 
+  
+  <entry>
+    <title type="html"><![CDATA[Использование `redirect_to :back` в Rails 5]]></title>
+    <link href="http://gururuby.ru/blog/2016/03/03/rails5-redirect-to-back/"/>
+    <updated>2016-03-03T10:40:46+03:00</updated>
+    <id>http://gururuby.ru/blog/2016/03/03/rails5-redirect-to-back</id>
+    <content type="html"><![CDATA[<p>В Rails 4.x для возврата на предыдущую страницу, использовался метод <code>redirect_to :back</code>.
+Иногда, при использовании данного метода в контроллере, мы могли получать ошибку <code>ActionController::RedirectBackError</code>,
+это случалось тогда, когда не был установлен <code>HTTP_REFERER</code> в заголовках запроса.</p>
+
+<!-- more -->
+
+
+<p>Рассмотрим пример, в котором обработаем ошибку <code>ActionController::RedirectBackError</code> и заставим наше приложение редиректить на <code>root_url</code> в случае отсутствия заголовка <code>HTTP_REFERER</code>:</p>
+
+<pre><code class="ruby">class PostsController &lt; ApplicationController
+
+  rescue_from ActionController::RedirectBackError, with: :redirect_to_default
+
+  def publish
+    post = Post.find params[:id]
+    post.publish!
+    redirect_to :back
+  end
+
+  private
+
+  def redirect_to_default
+    redirect_to root_path
+  end
+
+end
+</code></pre>
+
+<p>В случае возникновения ошибки, сработает приватный метод <code>redirect_to_default</code>, который отредиректит на корневой path.</p>
+
+<h3>Rails 5</h3>
+
+<p>В Rails 5, <code>redirect_to :back</code> считается <em>deprecated</em>, и вместо него появился новый метод который называется - <code>redirect_back</code>.
+В нем в качестве дополнительной опции можно передать <code>fallback_location</code>, и таким образом избавиться от тех костылей которые мы реализовывали выше.</p>
+
+<p>Изменим наш пример для Rails 5</p>
+
+<pre><code class="ruby">class PostsController &lt; ApplicationController
+
+  def publish
+    post = Post.find params[:id]
+    post.publish!
+    redirect_back(fallback_location: root_path)
+  end
+
+end
+</code></pre>
+
+<p>Как видите все стало намного прозрачнее и проще!</p>
+]]></content>
+  </entry>
   
   <entry>
     <title type="html"><![CDATA[Rails 5 использование #belongs_to]]></title>

@@ -4,7 +4,7 @@
   <title><![CDATA[Category: Ruby on Rails | Gururuby.ru | Блог Ruby-разработчика]]></title>
   <link href="http://gururuby.ru/blog/categories/ruby-on-rails/atom.xml" rel="self"/>
   <link href="http://gururuby.ru/"/>
-  <updated>2016-02-27T16:08:40+03:00</updated>
+  <updated>2016-03-03T23:00:57+03:00</updated>
   <id>http://gururuby.ru/</id>
   <author>
     <name><![CDATA[Gururuby.ru]]></name>
@@ -12,6 +12,63 @@
   </author>
   <generator uri="http://octopress.org/">Octopress</generator>
 
+  
+  <entry>
+    <title type="html"><![CDATA[Использование `redirect_to :back` в Rails 5]]></title>
+    <link href="http://gururuby.ru/blog/2016/03/03/rails5-redirect-to-back/"/>
+    <updated>2016-03-03T10:40:46+03:00</updated>
+    <id>http://gururuby.ru/blog/2016/03/03/rails5-redirect-to-back</id>
+    <content type="html"><![CDATA[<p>В Rails 4.x для возврата на предыдущую страницу, использовался метод <code>redirect_to :back</code>.
+Иногда, при использовании данного метода в контроллере, мы могли получать ошибку <code>ActionController::RedirectBackError</code>,
+это случалось тогда, когда не был установлен <code>HTTP_REFERER</code> в заголовках запроса.</p>
+
+<!-- more -->
+
+
+<p>Рассмотрим пример, в котором обработаем ошибку <code>ActionController::RedirectBackError</code> и заставим наше приложение редиректить на <code>root_url</code> в случае отсутствия заголовка <code>HTTP_REFERER</code>:</p>
+
+<pre><code class="ruby">class PostsController &lt; ApplicationController
+
+  rescue_from ActionController::RedirectBackError, with: :redirect_to_default
+
+  def publish
+    post = Post.find params[:id]
+    post.publish!
+    redirect_to :back
+  end
+
+  private
+
+  def redirect_to_default
+    redirect_to root_path
+  end
+
+end
+</code></pre>
+
+<p>В случае возникновения ошибки, сработает приватный метод <code>redirect_to_default</code>, который отредиректит на корневой path.</p>
+
+<h3>Rails 5</h3>
+
+<p>В Rails 5, <code>redirect_to :back</code> считается <em>deprecated</em>, и вместо него появился новый метод который называется - <code>redirect_back</code>.
+В нем в качестве дополнительной опции можно передать <code>fallback_location</code>, и таким образом избавиться от тех костылей которые мы реализовывали выше.</p>
+
+<p>Изменим наш пример для Rails 5</p>
+
+<pre><code class="ruby">class PostsController &lt; ApplicationController
+
+  def publish
+    post = Post.find params[:id]
+    post.publish!
+    redirect_back(fallback_location: root_path)
+  end
+
+end
+</code></pre>
+
+<p>Как видите все стало намного прозрачнее и проще!</p>
+]]></content>
+  </entry>
   
   <entry>
     <title type="html"><![CDATA[Rails 5 использование #belongs_to]]></title>
@@ -616,348 +673,6 @@ end
 
 <p>Проблема вполне решаема, разными способами, но лично я остановился бы на VCR. Но конечно нужно смотреть еще
 на целесообразность использования того или инструмента для облегчения тестирования внешних сервисов.</p>
-]]></content>
-  </entry>
-  
-  <entry>
-    <title type="html"><![CDATA[Простой чат с помощью ActionCable]]></title>
-    <link href="http://gururuby.ru/blog/2015/12/18/simple-chat-via-action-cable/"/>
-    <updated>2015-12-18T23:10:01+03:00</updated>
-    <id>http://gururuby.ru/blog/2015/12/18/simple-chat-via-action-cable</id>
-    <content type="html"><![CDATA[<p><img src="/images/action_cable.png">
-ActionCable, который ожидается в Rails 5, наконец на этой неделе был <a href="https://github.com/rails/rails/pull/22585">замержен</a> в мастер ветку Rails.
-Давайте создадим простой чат на его основе.</p>
-
-<!-- more -->
-
-
-<p>Если вы не знаете, что такое ActionCable, то это библиотека, которая позволяет интегрировать WebSocket-ы c вашим Rails-приложением
-Т.е мы имеем необходимый инструмент как на стороне клиента, так и на стороне сервера.</p>
-
-<p>Итак, нам понадобится:</p>
-
-<ul>
-<li>Установленный Redis (для пользователей Ubuntu достаточно одной команды <code>sudo apt-get install redis-server</code>)</li>
-<li>Rails 4.2 +</li>
-</ul>
-
-
-<h3>Создаем костяк проекта</h3>
-
-<p>Назовем его chat, пропускаем установку gems, с помощью опции -B</p>
-
-<pre><code class="bash ">rails new chat -B
-</code></pre>
-
-<p>Теперь о необходимых гемах для работы нашего чата, нам понадобится:</p>
-
-<ul>
-<li>Сервер приложения - <a href="https://github.com/puma/puma">Puma</a>. Webrick тут не подходит так как ActionCable использует отдельный процесс нашего App сервера, и
-поэтому нам нужен многопоточный сервер Puma или <a href="https://github.com/macournoyer/thin/">Thin</a></li>
-<li>Шаблонизатор <a href="https://github.com/slim-template/slim-rails">slim</a> (просто привычка работать именно с ним)</li>
-<li><a href="https://github.com/rails/actioncable">ActionCable</a></li>
-</ul>
-
-
-<p>Ваш Gemfile должен выглядеть примерно вот так:</p>
-
-<pre><code class="ruby Gemfile">source 'https://rubygems.org'
-gem 'rails', '4.2.5'
-gem 'sqlite3'
-gem 'sass-rails', '~&gt; 5.0'
-gem 'uglifier', '&gt;= 1.3.0'
-gem 'coffee-rails', '~&gt; 4.1.0'
-gem 'jquery-rails'
-gem 'turbolinks'
-gem 'jbuilder', '~&gt; 2.0'
-gem 'sdoc', '~&gt; 0.4.0', group: :doc
-
-gem 'actioncable', github: 'rails/actioncable'
-gem 'slim-rails'
-gem 'puma'
-
-group :development, :test do
-  gem 'byebug'
-end
-
-group :development do
-  gem 'web-console', '~&gt; 2.0'
-  gem 'spring'
-end
-</code></pre>
-
-<p>Выполняем установку gems, <code>bundle install</code></p>
-
-<h3>Структура проекта</h3>
-
-<p>В нашем проекте будут контроллеры:</p>
-
-<ul>
-<li>MessagesController - будет отвечать за вывод сообщений и их создание</li>
-<li>SessionsController - в нем мы создадим простую cookie-аутентификацию для пользователя</li>
-</ul>
-
-
-<p>При создании контроллеров будем использовать дополнительные опции, &ndash;no-helper и &ndash;no-assets,
-чтобы не &ldquo;плодить&rdquo; лишние файлы.</p>
-
-<h3>Контроллеры и маршруты</h3>
-
-<p>Создаем контроллер Sessions
-<code>bash
-rails g controller Sessions --no-helper --no-assets
-</code>
-Добавляем create action
-<figure class='code'><figcaption><span>app/controllers/sessions_controller.rb</span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-<span class='line-number'>9</span>
-<span class='line-number'>10</span>
-<span class='line-number'>11</span>
-<span class='line-number'>12</span>
-</pre></td><td class='code'><pre><code class='ruby'><span class='line'><span class="k">class</span> <span class="nc">SessionsController</span> <span class="o">&amp;</span><span class="n">lt</span><span class="p">;</span> <span class="no">ApplicationController</span><span class="o">&lt;</span><span class="sr">/p&gt;</span>
-</span><span class='line'>
-</span><span class='line'><span class="sr">&lt;p&gt;  def create</span>
-</span><span class='line'><span class="sr">    cookies.signed[:username] = params[:session][:username]</span>
-</span><span class='line'><span class="sr">    redirect_to messages_path</span>
-</span><span class='line'><span class="sr">  end&lt;/</span><span class="nb">p</span><span class="o">&gt;</span>
-</span><span class='line'>
-</span><span class='line'><span class="o">&lt;</span><span class="nb">p</span><span class="o">&gt;</span><span class="k">end</span>
-</span><span class='line'><span class="o">&lt;</span><span class="n">code</span><span class="o">&gt;</span>
-</span><span class='line'><span class="err">Создаем</span> <span class="err">контроллер</span> <span class="no">Messages</span>
-</span><span class='line'><span class="o">&lt;</span><span class="sr">/code&gt;bash</span>
-</span><span class='line'><span class="sr">rails g controller Messages &amp;ndash;no-helper &amp;ndash;no-assets</span>
-</span></code></pre></td></tr></table></div></figure>
-Action для index не обязателен, мы его опустим, создадим action create</p>
-
-<pre><code class="ruby app/controllers/messages_controller.rb">class MessagesController &lt; ApplicationController
-
-  def create
-    head :ok
-  end
-
-end
-</code></pre>
-
-<p>В нем мы возвращаем заголовок <code>:ok</code> для ajax запроса.
-Теперь пропишем маршруты для наших контроллеров в <code>routes.rb</code></p>
-
-<pre><code class="ruby app/config/routes.rb">Rails.application.routes.draw do
-  resources :messages, only: [:index, :create]
-  resources :sessions, only: [:new, :create]
-
-  root 'sessions#new'
-end
-</code></pre>
-
-<p>Корень нашего чата будет вести на логин пользователя</p>
-
-<h3>Создаем View</h3>
-
-<p>Для начала создадим страничку <code>new</code> для <code>SessionsController</code>, в которой будет простая форма с одним инпутом
-<code>slim app/views/sessions/new.html.slim
-= form_for :session, url: sessions_path do |form|
-  = form.label :username, 'Ваш никнейм'
-  br
-  = form.text_field :username
-  br
-  = form.submit 'Войти в чат'
-</code>
-Теперь создадим страницу на которой будут выводиться все сообщения и в ней будет находиться форма с созданием нового сообщения
-<figure class='code'><figcaption><span>app/views/messages/index.html.slim</span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-<span class='line-number'>9</span>
-<span class='line-number'>10</span>
-<span class='line-number'>11</span>
-<span class='line-number'>12</span>
-<span class='line-number'>13</span>
-<span class='line-number'>14</span>
-<span class='line-number'>15</span>
-<span class='line-number'>16</span>
-<span class='line-number'>17</span>
-<span class='line-number'>18</span>
-<span class='line-number'>19</span>
-<span class='line-number'>20</span>
-<span class='line-number'>21</span>
-<span class='line-number'>22</span>
-<span class='line-number'>23</span>
-<span class='line-number'>24</span>
-<span class='line-number'>25</span>
-<span class='line-number'>26</span>
-<span class='line-number'>27</span>
-<span class='line-number'>28</span>
-<span class='line-number'>29</span>
-<span class='line-number'>30</span>
-<span class='line-number'>31</span>
-<span class='line-number'>32</span>
-<span class='line-number'>33</span>
-<span class='line-number'>34</span>
-<span class='line-number'>35</span>
-<span class='line-number'>36</span>
-<span class='line-number'>37</span>
-<span class='line-number'>38</span>
-<span class='line-number'>39</span>
-<span class='line-number'>40</span>
-</pre></td><td class='code'><pre><code class='slim'><span class='line'><span class="nt">p</span>
-</span><span class='line'>  | Вы вошли как
-</span><span class='line'>  &amp;lsquo;
-</span><span class='line'>  <span class="nt">b</span> <span class="si">#{</span><span class="n">cookies</span><span class="o">.</span><span class="n">signed</span><span class="o">[</span><span class="ss">:username</span><span class="o">]</span><span class="si">}</span>&lt;/p&gt;
-</span><span class='line'>
-</span><span class='line'>&lt;h1&gt;messages&lt;/h1&gt;
-</span><span class='line'>
-</span><span class='line'>&lt;p&gt;br&lt;/p&gt;
-</span><span class='line'>
-</span><span class='line'>&lt;p&gt;= form_for :message, url: messages_path, remote: true, id: &amp;lsquo;messages-form&amp;rsquo; do |form|
-</span><span class='line'>  <span class="p">=</span> <span class="n">form</span><span class="o">.</span><span class="n">label</span> <span class="ss">:body</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">lsquo</span><span class="p">;</span><span class="err">Введите</span> <span class="err">сообщение</span><span class="ss">:&amp;</span><span class="n">rsquo</span><span class="p">;</span>
-</span><span class='line'>  <span class="nt">br</span>
-</span><span class='line'>  <span class="p">=</span> <span class="n">form</span><span class="o">.</span><span class="n">text_field</span> <span class="ss">:body</span>
-</span><span class='line'>  <span class="nt">br</span>
-</span><span class='line'>  <span class="p">=</span> <span class="n">form</span><span class="o">.</span><span class="n">submit</span> <span class="o">&amp;</span><span class="n">lsquo</span><span class="p">;</span><span class="err">Отправить</span> <span class="err">сообщение</span><span class="o">&amp;</span><span class="n">rsquo</span><span class="p">;</span>
-</span><span class='line'>&lt;code&gt;``
-</span><span class='line'>Здесь мы выведем имя залогинившегося пользователя, и создадим контейнер для сообщений&lt;/code&gt;#messages`&lt;/p&gt;
-</span><span class='line'>
-</span><span class='line'>&lt;h3&gt;Настройка ActionCable(backend)&lt;/h3&gt;
-</span><span class='line'>
-</span><span class='line'>&lt;p&gt;Для работы с ActionCable необходимо создать 2 класса &lt;code&gt;Connection&lt;/code&gt; и &lt;code&gt;Channel&lt;/code&gt;
-</span><span class='line'>Создадим их в папке &lt;code&gt;app/channels/application_cable&lt;/code&gt;
-</span><span class='line'>Прописывать &lt;code&gt;channels&lt;/code&gt; в autoloads не нужно, Rails подгрузит их по умолчанию
-</span><span class='line'>&lt;code&gt;ruby app/channels/application_cable/connection.rb
-</span><span class='line'><span class="nt">module</span> ApplicationCable
-</span><span class='line'>  <span class="nt">class</span> Connection &amp;lt; ActionCable::Connection::Base
-</span><span class='line'>  <span class="nt">end</span>
-</span><span class='line'><span class="nt">end</span>
-</span><span class='line'>&lt;/code&gt;&lt;/p&gt;
-</span><span class='line'>
-</span><span class='line'>&lt;pre&gt;&lt;code class=&quot;ruby app/channels/application_cable/channel.rb&quot;&gt;module ApplicationCable
-</span><span class='line'>  <span class="nt">class</span> Channel &amp;lt; ActionCable::Channel::Base
-</span><span class='line'>  <span class="nt">end</span>
-</span><span class='line'><span class="nt">end</span>
-</span><span class='line'>&lt;/code&gt;&lt;/pre&gt;
-</span><span class='line'>
-</span><span class='line'>&lt;h3&gt;Настройка Redis&lt;/h3&gt;
-</span><span class='line'>
-</span><span class='line'>&lt;p&gt;ActionCable использует Redis, добавим конфигурационный файл в &lt;code&gt;config/redis/cable.yml&lt;/code&gt;.
-</span><span class='line'>Настройки довольно стандартные для Redis.
-</span></code></pre></td></tr></table></div></figure>yml config/redis/cable.yml
-default: &amp;default
-  url: redis://localhost:6379
-  host: localhost
-  port: 6379
-  timeout: 1
-  inline: true</p>
-
-<p>development: <em>default
-test: </em>default
-<code>
-Так как ActionCable использует отдельный процесс, то создадим rackup файл с конфигурацией `cable/config.ru`
-</code>ruby cable/config.ru
-require ::File.expand_path(&lsquo;../../config/environment&rsquo;,  <strong>FILE</strong>)
-Rails.application.eager_load!</p>
-
-<p>require &lsquo;action_cable/process/logging&rsquo;</p>
-
-<p>run ActionCable.server
-<code>
-Для удобства запуска нашего ActionCable сервера, давайте добавим sh скрипт в папку `bin` и назовем его `cable`
-</code>bash bin/cable</p>
-
-<h1>/bin/bash</h1>
-
-<p>bundle exec puma -p 28080 cable/config.ru
-<code>``
-Не забываем поставить этому файлу права на исполнение</code>chmod +x bin/cable`</p>
-
-<p>Теперь создадим <code>MessagesChannel</code>, ответственный за подписку на стрим</p>
-
-<pre><code class="ruby app/channels/messages_channel.rb">class MessagesChannel &lt; ApplicationCable::Channel
-  def subscribed
-    stream_from 'messages'
-  end
-end
-</code></pre>
-
-<p>Далее изменим наш action <code>create</code> в MessagesController, добавим функционал по отсылке сообщений
-<figure class='code'><figcaption><span>app/controllers/messages_controller.rb</span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-<span class='line-number'>9</span>
-<span class='line-number'>10</span>
-<span class='line-number'>11</span>
-<span class='line-number'>12</span>
-<span class='line-number'>13</span>
-<span class='line-number'>14</span>
-</pre></td><td class='code'><pre><code class='ruby'><span class='line'><span class="k">class</span> <span class="nc">MessagesController</span> <span class="o">&amp;</span><span class="n">lt</span><span class="p">;</span> <span class="no">ApplicationController</span>
-</span><span class='line'>  <span class="k">def</span> <span class="nf">create</span>
-</span><span class='line'>    <span class="no">ActionCable</span><span class="o">.</span><span class="n">server</span><span class="o">.</span><span class="n">broadcast</span> <span class="o">&amp;</span><span class="n">lsquo</span><span class="p">;</span><span class="n">messages</span><span class="o">&amp;</span><span class="n">rsquo</span><span class="p">;,</span>
-</span><span class='line'>                                 <span class="ss">message</span><span class="p">:</span> <span class="n">message_params</span><span class="o">[</span><span class="ss">:body</span><span class="o">]</span><span class="p">,</span>
-</span><span class='line'>                                 <span class="ss">username</span><span class="p">:</span> <span class="n">cookies</span><span class="o">.</span><span class="n">signed</span><span class="o">[</span><span class="ss">:username</span><span class="o">]</span>
-</span><span class='line'>    <span class="n">head</span> <span class="ss">:ok</span>
-</span><span class='line'>  <span class="k">end</span><span class="o">&lt;</span><span class="sr">/p&gt;</span>
-</span><span class='line'>
-</span><span class='line'><span class="sr">&lt;p&gt;  private&lt;/</span><span class="nb">p</span><span class="o">&gt;</span>
-</span><span class='line'>
-</span><span class='line'><span class="o">&lt;</span><span class="nb">p</span><span class="o">&gt;</span>  <span class="k">def</span> <span class="nf">message_params</span>
-</span><span class='line'>    <span class="n">params</span><span class="o">.</span><span class="n">require</span><span class="p">(</span><span class="ss">:message</span><span class="p">)</span><span class="o">.</span><span class="n">permit</span><span class="p">(</span><span class="ss">:body</span><span class="p">)</span>
-</span><span class='line'>  <span class="k">end</span>
-</span><span class='line'><span class="k">end</span>
-</span></code></pre></td></tr></table></div></figure></p>
-
-<h3>Настройка client-side</h3>
-
-<p>Создадим папку <code>channels</code> в <code>app/assets/javascripts</code>.
-Сначала необходимо создать соединение с нашим ActionCable сервером, создаем <code>index.coffee</code>
-```coffee app/assets/javascripts/channels/index.coffee</p>
-
-<h1>= require cable</h1>
-
-<h1>= require_self</h1>
-
-<h1>= require_tree .</h1>
-
-<p>@App = {}
-App.cable = Cable.createConsumer &lsquo;ws://127.0.0.1:28080&rsquo;
-<code>``
-Теперь подпишемся на</code>MessagesChannel<code>, создаем</code>messages.coffee`</p>
-
-<pre><code class="coffee app/assets/javascripts/channels/messages.coffee">App.messages = App.cable.subscriptions.create 'MessagesChannel',
-  received: (data) -&gt;
-    $('#messages').append @renderMessage(data)
-
-  renderMessage: (data) -&gt;
-    "&lt;p&gt;&lt;b&gt;[#{data.username}]:&lt;/b&gt; #{data.message}&lt;/p&gt;"
-</code></pre>
-
-<p>Здесь в функции <code>received</code> мы получаем данные и вставляем отрендеренные сообщения в <code>#messages</code> контейнер</p>
-
-<p>Теперь добавим наш js(<code>//= require channels</code>) в <code>application.js</code>
-<code>js app/assets/javascripts/application.js
-//= require jquery
-//= require jquery_ujs
-//= require turbolinks
-//= require channels
-//= require_tree .
-</code></p>
-
-<h3>Наш чат готов!</h3>
-
-<p>Запускаем наше rails приложение <code>rails s</code>, потом запускаем <code>./bin/cable</code>. Открываем либо два браузера, либо
-запускаем вкладку в режиме инкогнито, переходим на <a href="http://localhost:3000">http://localhost:3000</a> и проверяем работу чата.</p>
 ]]></content>
   </entry>
   
