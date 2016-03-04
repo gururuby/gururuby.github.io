@@ -4,7 +4,7 @@
   <title><![CDATA[Category: Rails 5 | Gururuby.ru | Блог Ruby-разработчика]]></title>
   <link href="http://gururuby.ru/blog/categories/rails-5/atom.xml" rel="self"/>
   <link href="http://gururuby.ru/"/>
-  <updated>2016-03-03T23:14:37+03:00</updated>
+  <updated>2016-03-05T01:21:37+03:00</updated>
   <id>http://gururuby.ru/</id>
   <author>
     <name><![CDATA[Gururuby.ru]]></name>
@@ -12,6 +12,109 @@
   </author>
   <generator uri="http://octopress.org/">Octopress</generator>
 
+  
+  <entry>
+    <title type="html"><![CDATA[Кэшируем статику с `http_cache_forever` в Rails 5]]></title>
+    <link href="http://gururuby.ru/blog/2016/03/04/rails5-http-cache-forever/"/>
+    <updated>2016-03-04T10:40:46+03:00</updated>
+    <id>http://gururuby.ru/blog/2016/03/04/rails5-http-cache-forever</id>
+    <content type="html"><![CDATA[<p>Продолжаем знакомиться с нововведениями в Rails 5. Часто в проектах бывают статические странички, которые редко меняются, и нам не хотелось бы рендерить их каждый раз заново.
+В Rails 5 есть метод <code>http_cache_forever</code> который используется в контроллере, и позволяет закэшировать страницу.</p>
+
+<!-- more -->
+
+
+<p>Рассмотрим пример:</p>
+
+<p>```ruby</p>
+
+<h1>app/controllers/pages_controller.rb</h1>
+
+<p>class PagesController &lt; ApplicationController
+  def about
+  end
+end</p>
+
+<h1>app/views/pages/about.html.erb</h1>
+
+<h1>О нас</h1>
+
+
+<p>```</p>
+
+<p>Есть контроллер <code>Pages</code>, в нем action <code>about</code>, который рендерит страницу &lsquo;О нас&rsquo; нашего сайта.
+Посмотрим на логи нашего приложения:</p>
+
+<p><figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>Processing by PagesController#about as HTML
+</span><span class='line'>  Rendered pages/about.html.erb within layouts/application (1.3ms)
+</span><span class='line'>Completed 200 OK in 224ms (Views: 212.4ms | ActiveRecord: 0.0ms)</span></code></pre></td></tr></table></div></figure></p>
+
+<p>Видно что рендеринг страницы занимает <code>212.4ms</code>. Это довольно много, видимо на странице много контента.
+Попробуем использовать <code>http_cache_forever</code>.</p>
+
+<p><figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+</pre></td><td class='code'><pre><code class='ruby'><span class='line'><span class="o">&lt;</span><span class="sr">/p&gt;</span>
+</span><span class='line'>
+</span><span class='line'><span class="sr">&lt;h1&gt;app/</span><span class="n">controllers</span><span class="o">/</span><span class="n">pages_controller</span><span class="o">.</span><span class="n">rb</span><span class="o">&lt;</span><span class="sr">/h1&gt;</span>
+</span><span class='line'>
+</span><span class='line'><span class="sr">&lt;p&gt;class PagesController &amp;lt; ApplicationController</span>
+</span><span class='line'><span class="sr">  def about</span>
+</span><span class='line'><span class="sr">    http_cache_forever(public: true, version: &amp;lsquo;v1&amp;rsquo;) {}</span>
+</span><span class='line'><span class="sr">  end</span>
+</span><span class='line'><span class="sr">end</span>
+</span></code></pre></td></tr></table></div></figure></p>
+
+<p>Этот метод в качестве первого аргумента принимает список опций, а вторым блок, который может быть записан также с помощью <code>do end</code>
+Используя этот метод, мы устанавливаем заголовки ответа, которые указывают браузеру, что ответ не изменился и можно использовать закэшированную версию страницы.
+И в логах теперь будет следующее:</p>
+
+<p><figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>&lt;/p>
+</span><span class='line'>
+</span><span class='line'>&lt;h1>Первый запрос&lt;/h1>
+</span><span class='line'>
+</span><span class='line'>&lt;p>Processing by PagesController#about as HTML
+</span><span class='line'>  Rendered pages/about.html.erb within layouts/application (1.3ms)
+</span><span class='line'>Completed 200 OK in 224ms (Views: 212.4ms | ActiveRecord: 0.0ms)&lt;/p>
+</span><span class='line'>
+</span><span class='line'>&lt;h1>Последующий запрос&lt;/h1>
+</span><span class='line'>
+</span><span class='line'>&lt;p>Processing by PagesController#about as HTML
+</span><span class='line'>Completed 304 Not Modified in 2ms (ActiveRecord: 0.0ms)</span></code></pre></td></tr></table></div></figure></p>
+
+<p>Происходит первый запрос, во втором браузеру отправляется заголовок ответа “304 Not Modified”, и мы видим кэшированную страницу</p>
+
+<h3>Подробнее о http_cache_forever</h3>
+
+<p>Рассмотрим опции которые передаются в этот метод. Если мы не укажем <code>public: true</code>, то кэширование будет работать только для браузера,
+в противном случае, кэширование включится также и для проксированных запросов.</p>
+
+<p>Используйте опцию <code>version</code>, когда вы изменили страничку, и хотите инвалидировать кэш. Указав версию отличную от предыдущей, вы заставите браузер обновить пересоздать кэш страницы. Например <code>version: 'v2'</code>
+Посмотреть на реализацию, можно заглянув на гитхаб, в <a href="https://github.com/rails/rails/pull/18394/files">этот коммит</a>.</p>
+]]></content>
+  </entry>
   
   <entry>
     <title type="html"><![CDATA[Использование `redirect_to :back` в Rails 5]]></title>

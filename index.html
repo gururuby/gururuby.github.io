@@ -9,8 +9,7 @@
   <meta name="author" content="Gururuby.ru">
 
   
-  <meta name="description" content="В Rails 4.x для возврата на предыдущую страницу, использовался метод redirect_to :back.
-Иногда, при использовании данного метода в контроллере, мы &hellip;">
+  <meta name="description" content="Продолжаем знакомиться с нововведениями в Rails 5. Часто в проектах бывают статические странички, которые редко меняются, и нам не хотелось бы &hellip;">
   
 
   <!-- http://t.co/dKP3o1e -->
@@ -81,6 +80,44 @@
     <div id="content">
       <div class="blog-index">
   
+  
+  
+    <article>
+      
+  <header>
+    
+      <h1 class="entry-title"><a href="/blog/2016/03/04/rails5-http-cache-forever/">Кэшируем статику с `http_cache_forever` в Rails 5</a></h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+<time class='entry-date' datetime='2016-03-04T10:40:46+03:00'><span class='date'>04/03/2016</span> <span class='time'>10:40 am</span></time>
+        
+           | <a href="/blog/2016/03/04/rails5-http-cache-forever/#disqus_thread"
+             data-disqus-identifier="http://gururuby.ru/blog/2016/03/04/rails5-http-cache-forever/">Comments</a>
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><p>Продолжаем знакомиться с нововведениями в Rails 5. Часто в проектах бывают статические странички, которые редко меняются, и нам не хотелось бы рендерить их каждый раз заново.
+В Rails 5 есть метод <code>http_cache_forever</code> который используется в контроллере, и позволяет закэшировать страницу.</p>
+
+</div>
+  
+  
+    <footer>
+      <a rel="full-article" href="/blog/2016/03/04/rails5-http-cache-forever/">Читать дальше &rarr;</a>
+    </footer>
+  
+
+
+    </article>
   
   
     <article>
@@ -428,44 +465,9 @@ ActionCable, который ожидается в Rails 5, наконец на �
 
     </article>
   
-  
-    <article>
-      
-  <header>
-    
-      <h1 class="entry-title"><a href="/blog/2015/12/16/whats_new_in_ruby_2_3/">Что нового в Ruby 2.3?</a></h1>
-    
-    
-      <p class="meta">
-        
-
-
-
-
-<time class='entry-date' datetime='2015-12-16T19:48:43+03:00'><span class='date'>16/12/2015</span> <span class='time'>7:48 pm</span></time>
-        
-           | <a href="/blog/2015/12/16/whats_new_in_ruby_2_3/#disqus_thread"
-             data-disqus-identifier="http://gururuby.ru/blog/2015/12/16/whats_new_in_ruby_2_3/">Comments</a>
-        
-      </p>
-    
-  </header>
-
-
-  <div class="entry-content"><p>Совсем скоро выйдет релиз Ruby 2.3.0, а пока доступен пререлиз под номером 1. Давайте посмотрим что новенького появилось.</p>
-
-</div>
-  
-  
-    <footer>
-      <a rel="full-article" href="/blog/2015/12/16/whats_new_in_ruby_2_3/">Читать дальше &rarr;</a>
-    </footer>
-  
-
-
-    </article>
-  
   <div class="pagination">
+    
+      <a class="prev" href="/posts/2">&larr; Older</a>
     
     <a href="/blog/archives">Blog Archives</a>
     
@@ -476,6 +478,10 @@ ActionCable, который ожидается в Rails 5, наконец на �
     <section>
   <h1>Свежие записи</h1>
   <ul id="recent_posts">
+    
+      <li class="post">
+        <a href="/blog/2016/03/04/rails5-http-cache-forever/">Кэшируем статику с `http_cache_forever` в Rails 5</a>
+      </li>
     
       <li class="post">
         <a href="/blog/2016/03/03/rails5-redirect-to-back/">Использование `redirect_to :back` в Rails 5</a>
@@ -493,15 +499,11 @@ ActionCable, который ожидается в Rails 5, наконец на �
         <a href="/blog/2016/02/24/lesson-1-oop-and-ruby/">Божественный Ruby. Проповедь 1</a>
       </li>
     
-      <li class="post">
-        <a href="/blog/2016/02/11/rails-5-attributes/">ActiveRecord Attributes в Rails 5</a>
-      </li>
-    
   </ul>
 </section>
 <section>
     <h1>Категории</h1>
-    <span id="tag-cloud"><a href='/blog/categories/actioncable' style='font-size: 70.0%'>actioncable</a> <a href='/blog/categories/activerecord' style='font-size: 80.0%'>activerecord</a> <a href='/blog/categories/api' style='font-size: 70.0%'>api</a> <a href='/blog/categories/attributes' style='font-size: 70.0%'>attributes</a> <a href='/blog/categories/other' style='font-size: 70.0%'>other</a> <a href='/blog/categories/rails-5' style='font-size: 100.0%'>rails 5</a> <a href='/blog/categories/ruby' style='font-size: 100.0%'>ruby</a> <a href='/blog/categories/ruby-on-rails' style='font-size: 120.0%'>ruby on rails</a> <a href='/blog/categories/ruby-2-dot-3' style='font-size: 70.0%'>ruby-2.3</a> <a href='/blog/categories/ubuntu-14-dot-04' style='font-size: 70.0%'>ubuntu 14.04</a> <a href='/blog/categories/vcr' style='font-size: 70.0%'>vcr</a> <a href='/blog/categories/virtualbox' style='font-size: 70.0%'>virtualbox</a> <a href='/blog/categories/webmock' style='font-size: 70.0%'>webmock</a> <a href='/blog/categories/websocket' style='font-size: 70.0%'>websocket</a> <a href='/blog/categories/oop' style='font-size: 70.0%'>ООП</a> <a href='/blog/categories/vidieouroki' style='font-size: 80.0%'>видеоуроки</a> <a href='/blog/categories/dlia-nachinaiushchikh' style='font-size: 80.0%'>для начинающих</a> <a href='/blog/categories/keshirovaniie' style='font-size: 70.0%'>кэширование</a> <a href='/blog/categories/tiestirovaniie' style='font-size: 70.0%'>тестирование</a> </span>
+    <span id="tag-cloud"><a href='/blog/categories/actioncable' style='font-size: 68.57142857142857%'>actioncable</a> <a href='/blog/categories/activerecord' style='font-size: 77.14285714285714%'>activerecord</a> <a href='/blog/categories/api' style='font-size: 68.57142857142857%'>api</a> <a href='/blog/categories/attributes' style='font-size: 68.57142857142857%'>attributes</a> <a href='/blog/categories/other' style='font-size: 68.57142857142857%'>other</a> <a href='/blog/categories/rails-5' style='font-size: 102.85714285714286%'>rails 5</a> <a href='/blog/categories/ruby' style='font-size: 94.28571428571428%'>ruby</a> <a href='/blog/categories/ruby-on-rails' style='font-size: 120.0%'>ruby on rails</a> <a href='/blog/categories/ruby-2-dot-3' style='font-size: 68.57142857142857%'>ruby-2.3</a> <a href='/blog/categories/ubuntu-14-dot-04' style='font-size: 68.57142857142857%'>ubuntu 14.04</a> <a href='/blog/categories/vcr' style='font-size: 68.57142857142857%'>vcr</a> <a href='/blog/categories/virtualbox' style='font-size: 68.57142857142857%'>virtualbox</a> <a href='/blog/categories/webmock' style='font-size: 68.57142857142857%'>webmock</a> <a href='/blog/categories/websocket' style='font-size: 68.57142857142857%'>websocket</a> <a href='/blog/categories/oop' style='font-size: 68.57142857142857%'>ООП</a> <a href='/blog/categories/vidieouroki' style='font-size: 77.14285714285714%'>видеоуроки</a> <a href='/blog/categories/dlia-nachinaiushchikh' style='font-size: 77.14285714285714%'>для начинающих</a> <a href='/blog/categories/keshirovaniie' style='font-size: 77.14285714285714%'>кэширование</a> <a href='/blog/categories/tiestirovaniie' style='font-size: 68.57142857142857%'>тестирование</a> </span>
 </section>
 
   

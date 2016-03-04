@@ -1,6 +1,10 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.sitemaps.org/schemas/sitemap/0.9 http://www.sitemaps.org/schemas/sitemap/0.9/sitemap.xsd" xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url>
+    <loc>http://gururuby.ru/blog/2016/03/04/rails5-http-cache-forever/</loc>
+    <lastmod>2016-03-04T10:40:46+03:00</lastmod>
+  </url>
+  <url>
     <loc>http://gururuby.ru/blog/2016/03/03/rails5-redirect-to-back/</loc>
     <lastmod>2016-03-03T10:40:46+03:00</lastmod>
   </url>

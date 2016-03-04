@@ -5,11 +5,11 @@
 <!--[if (gt IE 8)|(gt IEMobile 7)|!(IEMobile)|!(IE)]><!--><html class="no-js" lang="en"><!--<![endif]-->
 <head>
   <meta charset="utf-8">
-  <title>Божественный Ruby. Проповедь 1 - Gururuby.ru | Блог Ruby-разработчика</title>
+  <title>Кэшируем статику с `http_cache_forever` в Rails 5 - Gururuby.ru | Блог Ruby-разработчика</title>
   <meta name="author" content="Gururuby.ru">
 
   
-  <meta name="description" content="Серия видеоуроков по Ruby, решил начать с объяснения своими словами ООП, в конце немного о Ruby. ">
+  <meta name="description" content="Продолжаем знакомиться с нововведениями в Rails 5. Часто в проектах бывают статические странички, которые редко меняются, и нам не хотелось бы &hellip;">
   
 
   <!-- http://t.co/dKP3o1e -->
@@ -18,7 +18,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
 
   
-  <link rel="canonical" href="http://gururuby.ru/blog/2016/02/24/lesson-1-oop-and-ruby/">
+  <link rel="canonical" href="http://gururuby.ru/blog/2016/03/04/rails5-http-cache-forever/">
   <link href="/favicon.png" rel="icon">
   <link href="/stylesheets/screen.css" media="screen, projection" rel="stylesheet" type="text/css">
   <link href="/atom.xml" rel="alternate" title="Gururuby.ru | Блог Ruby-разработчика" type="application/atom+xml">
@@ -83,7 +83,7 @@
   
   <header>
     
-      <h1 class="entry-title">Божественный Ruby. Проповедь 1</h1>
+      <h1 class="entry-title">Кэшируем статику с `http_cache_forever` в Rails 5</h1>
     
     
       <p class="meta">
@@ -92,7 +92,7 @@
 
 
 
-<time class='entry-date' datetime='2016-02-24T10:40:46+03:00'><span class='date'>24/02/2016</span> <span class='time'>10:40 am</span></time>
+<time class='entry-date' datetime='2016-03-04T10:40:46+03:00'><span class='date'>04/03/2016</span> <span class='time'>10:40 am</span></time>
         
            | <a href="#disqus_thread"
              data-disqus-identifier="http://gururuby.ru">Comments</a>
@@ -102,10 +102,97 @@
   </header>
 
 
-<div class="entry-content"><p>Серия видеоуроков по Ruby, решил начать с объяснения своими словами ООП, в конце немного о Ruby.</p>
+<div class="entry-content"><p>Продолжаем знакомиться с нововведениями в Rails 5. Часто в проектах бывают статические странички, которые редко меняются, и нам не хотелось бы рендерить их каждый раз заново.
+В Rails 5 есть метод <code>http_cache_forever</code> который используется в контроллере, и позволяет закэшировать страницу.</p>
 
-<iframe width="770" height="320" src="https://www.youtube.com/embed/mICGqoexnls" frameborder="0" allowfullscreen></iframe>
+<!-- more -->
 
+
+<p>Рассмотрим пример:</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+</pre></td><td class='code'><pre><code class='ruby'><span class='line'><span class="c1"># app/controllers/pages_controller.rb</span>
+</span><span class='line'><span class="k">class</span> <span class="nc">PagesController</span> <span class="o">&lt;</span> <span class="no">ApplicationController</span>
+</span><span class='line'>  <span class="k">def</span> <span class="nf">about</span>
+</span><span class='line'>  <span class="k">end</span>
+</span><span class='line'><span class="k">end</span>
+</span><span class='line'>
+</span><span class='line'><span class="c1"># app/views/pages/about.html.erb</span>
+</span><span class='line'><span class="o">&lt;</span><span class="n">h1</span><span class="o">&gt;</span><span class="err">О</span> <span class="err">нас</span><span class="o">&lt;</span><span class="sr">/h1&gt;</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>Есть контроллер <code>Pages</code>, в нем action <code>about</code>, который рендерит страницу &lsquo;О нас&rsquo; нашего сайта.
+Посмотрим на логи нашего приложения:</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>Processing by PagesController#about as HTML
+</span><span class='line'>  Rendered pages/about.html.erb within layouts/application (1.3ms)
+</span><span class='line'>Completed 200 OK in 224ms (Views: 212.4ms | ActiveRecord: 0.0ms)</span></code></pre></td></tr></table></div></figure>
+
+
+<p>Видно что рендеринг страницы занимает <code>212.4ms</code>. Это довольно много, видимо на странице много контента.
+Попробуем использовать <code>http_cache_forever</code>.</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+</pre></td><td class='code'><pre><code class='ruby'><span class='line'><span class="c1"># app/controllers/pages_controller.rb</span>
+</span><span class='line'><span class="k">class</span> <span class="nc">PagesController</span> <span class="o">&lt;</span> <span class="no">ApplicationController</span>
+</span><span class='line'>  <span class="k">def</span> <span class="nf">about</span>
+</span><span class='line'>    <span class="n">http_cache_forever</span><span class="p">(</span><span class="kp">public</span><span class="p">:</span> <span class="kp">true</span><span class="p">,</span> <span class="ss">version</span><span class="p">:</span> <span class="s1">&#39;v1&#39;</span><span class="p">)</span> <span class="p">{}</span>
+</span><span class='line'>  <span class="k">end</span>
+</span><span class='line'><span class="k">end</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>Этот метод в качестве первого аргумента принимает список опций, а вторым блок, который может быть записан также с помощью <code>do end</code>
+Используя этот метод, мы устанавливаем заголовки ответа, которые указывают браузеру, что ответ не изменился и можно использовать закэшированную версию страницы.
+И в логах теперь будет следующее:</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'># Первый запрос
+</span><span class='line'>
+</span><span class='line'>Processing by PagesController#about as HTML
+</span><span class='line'>  Rendered pages/about.html.erb within layouts/application (1.3ms)
+</span><span class='line'>Completed 200 OK in 224ms (Views: 212.4ms | ActiveRecord: 0.0ms)
+</span><span class='line'>
+</span><span class='line'># Последующий запрос
+</span><span class='line'>
+</span><span class='line'>Processing by PagesController#about as HTML
+</span><span class='line'>Completed 304 Not Modified in 2ms (ActiveRecord: 0.0ms)</span></code></pre></td></tr></table></div></figure>
+
+
+<p>Происходит первый запрос, во втором браузеру отправляется заголовок ответа “304 Not Modified”, и мы видим кэшированную страницу</p>
+
+<h3>Подробнее о http_cache_forever</h3>
+
+<p>Рассмотрим опции которые передаются в этот метод. Если мы не укажем <code>public: true</code>, то кэширование будет работать только для браузера,
+в противном случае, кэширование включится также и для проксированных запросов.</p>
+
+<p>Используйте опцию <code>version</code>, когда вы изменили страничку, и хотите инвалидировать кэш. Указав версию отличную от предыдущей, вы заставите браузер обновить пересоздать кэш страницы. Например <code>version: 'v2'</code>
+Посмотреть на реализацию, можно заглянув на гитхаб, в <a href="https://github.com/rails/rails/pull/18394/files">этот коммит</a>.</p>
 </div>
 
 
@@ -121,12 +208,12 @@
 
 
 
-<time class='entry-date' datetime='2016-02-24T10:40:46+03:00'><span class='date'>24/02/2016</span> <span class='time'>10:40 am</span></time>
+<time class='entry-date' datetime='2016-03-04T10:40:46+03:00'><span class='date'>04/03/2016</span> <span class='time'>10:40 am</span></time>
       
 
 <span class="categories">
   
-    <a class='category' href='/blog/categories/ruby/'>ruby</a>, <a class='category' href='/blog/categories/oop/'>ООП</a>, <a class='category' href='/blog/categories/vidieouroki/'>видеоуроки</a>, <a class='category' href='/blog/categories/dlia-nachinaiushchikh/'>для начинающих</a>
+    <a class='category' href='/blog/categories/rails-5/'>rails 5</a>, <a class='category' href='/blog/categories/ruby-on-rails/'>ruby on rails</a>, <a class='category' href='/blog/categories/keshirovaniie/'>кэширование</a>
   
 </span>
 
@@ -146,10 +233,8 @@
     
     <p class="meta">
       
-        <a class="basic-alignment left" href="/blog/2016/02/11/rails-5-attributes/" title="Previous Post: ActiveRecord Attributes в Rails 5">&laquo; ActiveRecord Attributes в Rails 5</a>
+        <a class="basic-alignment left" href="/blog/2016/03/03/rails5-redirect-to-back/" title="Previous Post: Использование `redirect_to :back` в Rails 5">&laquo; Использование `redirect_to :back` в Rails 5</a>
       
-      
-        <a class="basic-alignment right" href="/blog/2016/02/25/lesson-2-setup-environment/" title="Next Post: Божественный Ruby. Проповедь 2">Божественный Ruby. Проповедь 2 &raquo;</a>
       
     </p>
   </footer>
@@ -215,8 +300,8 @@
       
         
         // var disqus_developer = 1;
-        var disqus_identifier = 'http://gururuby.ru/blog/2016/02/24/lesson-1-oop-and-ruby/';
-        var disqus_url = 'http://gururuby.ru/blog/2016/02/24/lesson-1-oop-and-ruby/';
+        var disqus_identifier = 'http://gururuby.ru/blog/2016/03/04/rails5-http-cache-forever/';
+        var disqus_url = 'http://gururuby.ru/blog/2016/03/04/rails5-http-cache-forever/';
         var disqus_script = 'embed.js';
       
     (function () {
