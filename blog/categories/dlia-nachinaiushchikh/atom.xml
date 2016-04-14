@@ -4,7 +4,7 @@
   <title><![CDATA[Category: для начинающих | Gururuby.ru | Блог Ruby-разработчика]]></title>
   <link href="http://gururuby.ru/blog/categories/dlia-nachinaiushchikh/atom.xml" rel="self"/>
   <link href="http://gururuby.ru/"/>
-  <updated>2016-03-05T01:21:37+03:00</updated>
+  <updated>2016-04-14T10:56:32+03:00</updated>
   <id>http://gururuby.ru/</id>
   <author>
     <name><![CDATA[Gururuby.ru]]></name>
@@ -12,6 +12,93 @@
   </author>
   <generator uri="http://octopress.org/">Octopress</generator>
 
+  
+  <entry>
+    <title type="html"><![CDATA[В чем разница между Load и Require, Include и Extend]]></title>
+    <link href="http://gururuby.ru/blog/2016/04/14/load-require-include-extend/"/>
+    <updated>2016-04-14T10:40:46+03:00</updated>
+    <id>http://gururuby.ru/blog/2016/04/14/load-require-include-extend</id>
+    <content type="html"><![CDATA[<p><img src="/images/14-04-2016.png">
+При написании сложных программ на Ruby появляется необходимость каким-то образом компоновать файлы, раскидывать код для улучшения читабельности,
+а также для повторного использования. В Ruby есть несколько методов, которые позволяют осуществить это как на уровне файлов так и на уровне кода.</p>
+
+<!-- more -->
+
+
+<p>Для организации файлов служат методы - <code>load</code> и <code>require</code>, а для организации кода - <code>include</code> и <code>extend</code></p>
+
+<h3><code>load</code> или <code>require</code></h3>
+
+<p><code>load</code> метод, позволяет включить файл в другой файл, при этом загрузка этого файла,
+будет происходить каждый раз в момент вызова кода где указано подключение. Это полезно для разработки, когда вам нужно видеть результат изменений вживую.</p>
+
+<p>Для примера код ниже. Есть какой-то модуль, в отдельном файле, и мы хотим его подключить в другой файл.</p>
+
+<pre><code class="ruby test_module.rb">module TestModule
+  def some_method
+    # ...
+  end
+end
+</code></pre>
+
+<pre><code class="ruby test_class.rb">load 'test_module.rb'
+class TestClass
+  def some_method
+    # ...
+  end
+end
+</code></pre>
+
+<p>Метод <code>require</code> работает по-другому. При его использовании, подключаемый файл, загружается единоразово в память, и используется в дальнейшем из памяти.
+Очевидно что при использовании такого способа подключения, программа будет работать быстрее. Но при разработке, вам придется постоянно перезапукать программу, чтобы
+видеть изменения.</p>
+
+<p>Используется он также как и <code>load</code>, <code>require 'test_module'</code>. При этом мы можем не указывать расширение <code>.rb</code>. Этот метод прекрасно сработает и без него.</p>
+
+<h3><code>include</code> или <code>extend</code></h3>
+
+<p>При организации кода внутри программы, нужно использовать методы - <code>include</code> или <code>extend</code>
+Если вы видите повторяющийся код в вашей программе, его можно вынести в отдельный модуль, и подключать его внутрь с использованием <code>include</code>.
+Например вот так:</p>
+
+<pre><code class="ruby">module TestModule
+  def some_method
+    "Some method of #{self.class}"
+  end
+end
+
+class TestClass
+  include TestModule
+  # ...
+end
+
+puts TestClass.new.some_method
+=&gt; 'Some method of TestClass'
+</code></pre>
+
+<p>C помощью <code>include</code> методы модуля становятся доступными для выполнения в классе <code>TestClass</code>. Т.е. таким образом мы можем избавиться от дублирования кода,
+перенся его в модуль и подключив там где нам это необходимо. Мы расширили класс, внедрив в него новые методы объекта.</p>
+
+<p>При использовании <code>extend</code>, мы можем также внедрить новые методы, но это уже будут методы класса, а не объекта.</p>
+
+<pre><code class="ruby">module TestModule
+  def some_method
+    "Some method of #{self.class}"
+  end
+end
+
+class TestClass
+  extend TestModule
+  # ...
+end
+
+puts TestClass.some_method
+=&gt; 'Some method of Class'
+</code></pre>
+
+<p>Поэтому используйте <code>extend</code> если хотите расширить функционал класса и <code>include</code> для добавления функционала к объекту класса.</p>
+]]></content>
+  </entry>
   
   <entry>
     <title type="html"><![CDATA[Божественный Ruby. Проповедь 2]]></title>
