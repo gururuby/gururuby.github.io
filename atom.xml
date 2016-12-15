@@ -4,7 +4,7 @@
   <title><![CDATA[Gururuby.ru | Блог Ruby-разработчика]]></title>
   <link href="http://gururuby.ru/atom.xml" rel="self"/>
   <link href="http://gururuby.ru/"/>
-  <updated>2016-04-14T10:56:32+03:00</updated>
+  <updated>2016-12-16T01:07:22+03:00</updated>
   <id>http://gururuby.ru/</id>
   <author>
     <name><![CDATA[Gururuby.ru]]></name>
@@ -12,6 +12,271 @@
   </author>
   <generator uri="http://octopress.org/">Octopress</generator>
 
+  
+  <entry>
+    <title type="html"><![CDATA[Что нового в Ruby 2.4?]]></title>
+    <link href="http://gururuby.ru/blog/2016/12/15/whats-new-in-ruby-2-4/"/>
+    <updated>2016-12-15T10:40:46+03:00</updated>
+    <id>http://gururuby.ru/blog/2016/12/15/whats-new-in-ruby-2-4</id>
+    <content type="html"><![CDATA[<p><img src="http://gururuby.ru/images/15-12-2016.jpg">
+Скоро выйдет стабильный релиз Ruby 2.4. Ознакомимся что же нас ждет нового.</p>
+
+<!-- more -->
+
+
+<h2>Float#round</h2>
+
+<p>Изменилось поведение метода <code>round</code>. Разработчики добавили возможность указать в какую сторону необходимо округлять, передав в этот
+метод дополнительный параметр <code>:half</code>, который может принимать значения: <code>:even, :up, :down</code>.
+Для примера:</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+</pre></td><td class='code'><pre><code class='ruby'><span class='line'><span class="p">(</span><span class="mi">3</span><span class="o">.</span><span class="mi">5</span><span class="p">)</span><span class="o">.</span><span class="n">round</span><span class="p">(</span><span class="ss">half</span><span class="p">:</span> <span class="ss">:up</span><span class="p">)</span>
+</span><span class='line'><span class="o">=&gt;</span> <span class="mi">4</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>Эти изменения касаются также таких методов как: <code>floor, ceil, truncate</code>. В них можно передать эту опцию.</p>
+
+<h2>IO#gets</h2>
+
+<p>Напомню что метод gets используется для получения пользовательского ввода в вашем скрипте. Вы наверняка использовали его
+в задачках по Ruby. Так вот, если пользователь вводил какие либо данные, к вам в результате приходила строка с переносом <code>\n</code>
+Чтобы ее убрать использовался метода chomp, который убирал ненужные данные. Теперь же мы можем указать опцию в методе gets
+и можно не использовать этот метод у результата.</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+</pre></td><td class='code'><pre><code class='ruby'><span class='line'><span class="c1"># 2.3</span>
+</span><span class='line'><span class="n">input_string</span> <span class="o">=</span> <span class="nb">gets</span>
+</span><span class='line'><span class="o">=&gt;</span> <span class="s1">&#39;tratata\n&#39;</span>
+</span><span class='line'><span class="c1"># 2.4</span>
+</span><span class='line'><span class="n">input_string</span> <span class="o">=</span> <span class="nb">gets</span><span class="p">(</span><span class="nb">chomp</span><span class="p">:</span> <span class="kp">true</span><span class="p">)</span>
+</span><span class='line'><span class="o">=&gt;</span> <span class="s1">&#39;tratata&#39;</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<h2>Dir, File, Pathname #empty?</h2>
+
+<p>Поздравляю теперь мы можем передать путь в метод <code>empty?</code> и выяснить содержит ли папка/файл/путь что-то внутри
+Метод <code>File.empty?</code> эквивалентен методу <code>File.zero?</code>, который уже давно был в библиотеке для работы с файлами.</p>
+
+<h2>Hash#transform_values</h2>
+
+<p>Как по мне довольно удобный метод добавили в класс Hash. Теперь мы можем изменять значения hash в итераторе.
+Например вот так:</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+</pre></td><td class='code'><pre><code class='ruby'><span class='line'><span class="c1"># 2.4</span>
+</span><span class='line'><span class="n">data</span> <span class="o">=</span> <span class="p">{</span><span class="ss">x</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span> <span class="ss">y</span><span class="p">:</span> <span class="mi">2</span><span class="p">,</span> <span class="ss">z</span><span class="p">:</span> <span class="mi">3</span><span class="p">}</span>
+</span><span class='line'><span class="n">data</span><span class="o">.</span><span class="n">transform_values</span><span class="p">{</span><span class="o">|</span><span class="n">value</span><span class="o">|</span> <span class="n">value</span> <span class="o">*</span> <span class="mi">2</span> <span class="p">}</span>
+</span><span class='line'><span class="o">=&gt;</span> <span class="p">{</span><span class="ss">x</span><span class="p">:</span> <span class="mi">2</span><span class="p">,</span> <span class="ss">y</span><span class="p">:</span> <span class="mi">4</span><span class="p">,</span> <span class="ss">z</span><span class="p">:</span> <span class="mi">6</span><span class="p">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<h2>Kernel#clone</h2>
+
+<p>При использовании <code>clone</code> или <code>dup</code>, можно теперь передать дополнительный аргумент, в котором указать будет ли объект
+<code>freeze</code>(недоступным для изменения).</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+</pre></td><td class='code'><pre><code class='ruby'><span class='line'><span class="c1"># 2.4</span>
+</span><span class='line'><span class="n">frozen_string</span> <span class="o">=</span> <span class="s2">&quot;frozen&quot;</span><span class="o">.</span><span class="n">freeze</span>
+</span><span class='line'><span class="nb">dup</span> <span class="o">=</span> <span class="n">frozen_string</span><span class="o">.</span><span class="n">clone</span><span class="p">(</span><span class="nb">freeze</span><span class="p">:</span> <span class="kp">false</span><span class="p">)</span>
+</span><span class='line'>
+</span><span class='line'><span class="nb">dup</span><span class="o">.</span><span class="n">frozen?</span>
+</span><span class='line'><span class="o">=&gt;</span> <span class="kp">false</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<h2>Binding#irb</h2>
+
+<p>Есть такой замечательный gem <code>pry</code>. Достаточно в любом месте кода поместить <code>binding.pry</code> и у вас появляется возможность
+использовать консоль pry для дебага вашего приложения. В Ruby 2.4 добавлена похожая фича, только нужно указать <code>binding.irb</code>.</p>
+
+<h2>Regexp#match?</h2>
+
+<p>Для регулярок добавили новый метод <code>match?</code> который работает аж в 3 раза быстрее чем методы <code>match, ===, =~</code>.
+При использовании медленных методов, руби создавал объект класса <code>MatchData</code>,
+а в новом методе он не создается, за счет этого повышенная скорость работы.</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+</pre></td><td class='code'><pre><code class='ruby'><span class='line'><span class="sr">/^foo (\w+)$/</span> <span class="o">=~</span> <span class="s1">&#39;foo bar&#39;</span>      <span class="c1"># =&gt; 0</span>
+</span><span class='line'>                                <span class="c1"># =&gt; #&lt;MatchData &quot;foo bar&quot; 1:&quot;bar&quot;&gt;</span>
+</span><span class='line'>
+</span><span class='line'><span class="sr">/^foo (\w+)$/</span><span class="o">.</span><span class="n">match</span><span class="p">(</span><span class="s1">&#39;foo baz&#39;</span><span class="p">)</span>  <span class="c1"># =&gt; #&lt;MatchData &quot;foo baz&quot; 1:&quot;baz&quot;&gt;</span>
+</span><span class='line'>                                <span class="c1"># =&gt; #&lt;MatchData &quot;foo baz&quot; 1:&quot;baz&quot;&gt;</span>
+</span><span class='line'>
+</span><span class='line'><span class="sr">/^foo (\w+)$/</span> <span class="o">===</span> <span class="s1">&#39;foo qux&#39;</span>     <span class="c1"># =&gt; true</span>
+</span><span class='line'>                                <span class="c1"># =&gt; #&lt;MatchData &quot;foo qux&quot; 1:&quot;qux&quot;&gt;</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+</pre></td><td class='code'><pre><code class='ruby'><span class='line'><span class="c1"># 2.4</span>
+</span><span class='line'><span class="sr">/^foo (\w+)$/</span><span class="o">.</span><span class="n">match?</span><span class="p">(</span><span class="s1">&#39;foo wow&#39;</span><span class="p">)</span> <span class="c1"># =&gt; true</span>
+</span><span class='line'>                                <span class="c1"># =&gt; nil</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<h2>Regexp#named_captures</h2>
+
+<p>Довольно забавная фича. Позволяет сделать именованные группы в регулярном выражении,
+и в последствии преобразовать это все в hash с результатами. Лучше один раз увидеть.</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+</pre></td><td class='code'><pre><code class='ruby'><span class='line'><span class="c1"># 2.4</span>
+</span><span class='line'><span class="n">pattern</span> <span class="o">=</span> <span class="sr">/(?&lt;name1&gt;\w+) (?&lt;name2&gt;\w+)/</span>
+</span><span class='line'><span class="n">pattern</span><span class="o">.</span><span class="n">match</span><span class="p">(</span><span class="s1">&#39;Herr Kresken&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">named_captures</span> <span class="c1"># =&gt; { &quot;name1&quot; =&gt; &quot;Herr&quot;, &quot;name2&quot; =&gt; &quot;Kresken&quot; }</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>Также для похожих целей можно использовать метод <code>values_at</code>, который также теперь можно применять к отматченному результату</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+</pre></td><td class='code'><pre><code class='ruby'><span class='line'><span class="c1"># 2.4</span>
+</span><span class='line'><span class="n">pattern</span> <span class="o">=</span> <span class="sr">/(?&lt;year&gt;\d{4})-(?&lt;month&gt;\d{2})-(?&lt;day&gt;\d{2})/</span>
+</span><span class='line'><span class="n">pattern</span><span class="o">.</span><span class="n">match</span><span class="p">(</span><span class="s1">&#39;2016-02-01&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">values_at</span><span class="p">(</span><span class="ss">:year</span><span class="p">,</span> <span class="ss">:month</span><span class="p">)</span> <span class="c1"># =&gt; [&quot;2016&quot;, &quot;02&quot;]</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>Кроме именованных ключей, вы можете передать индексы групп, например 1, 3</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+</pre></td><td class='code'><pre><code class='ruby'><span class='line'><span class="c1"># 2.4</span>
+</span><span class='line'><span class="n">pattern</span> <span class="o">=</span> <span class="sr">/(\d{4})-(\d{2})-(\d{2})$/</span>
+</span><span class='line'><span class="n">pattern</span><span class="o">.</span><span class="n">match</span><span class="p">(</span><span class="s1">&#39;2016-07-18&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">values_at</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">3</span><span class="p">)</span> <span class="c1"># =&gt; [&quot;2016&quot;, &quot;18&quot;]</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<h2>Integer#digits</h2>
+
+<p>Как получить массив чисел составляющих число? Раньше это можно было сделать так
+Преобразовать число в строку, вызвать метод <code>chars</code>, через map сделать <code>to_i</code></p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class='ruby'><span class='line'><span class="mi">123</span><span class="o">.</span><span class="n">to_s</span><span class="o">.</span><span class="n">chars</span><span class="o">.</span><span class="n">map</span><span class="p">(</span><span class="o">&amp;</span><span class="ss">:to_i</span><span class="p">)</span><span class="o">.</span><span class="n">reverse</span> <span class="c1"># =&gt; [3, 2, 1]</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>Теперь стало проще:</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+</pre></td><td class='code'><pre><code class='ruby'><span class='line'><span class="c1"># 2.4</span>
+</span><span class='line'><span class="mi">123</span><span class="o">.</span><span class="n">digits</span>                  <span class="c1"># =&gt; [3, 2, 1]</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<h2>Array#min, max</h2>
+
+<p>Array класс обзавелся своими методами <code>min, max</code>, который работают практически в 2 раза быстрее чем соответствующие методы
+Enumerable</p>
+
+<h2>Обьединение Bignum Fixnum в Integer</h2>
+
+<p>Довольно серьезное изменение структуры языка. В Ruby 2.4 убрали классы Fixnum и Bignum и объединили их в один Integer</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+</pre></td><td class='code'><pre><code class='ruby'><span class='line'><span class="c1"># 2.3:</span>
+</span><span class='line'><span class="n">numerics</span> <span class="c1"># =&gt; [Complex, Rational, Bignum, Float, Fixnum, Integer, BigDecimal]</span>
+</span><span class='line'>
+</span><span class='line'><span class="c1"># 2.4:</span>
+</span><span class='line'><span class="n">numerics</span> <span class="c1"># =&gt; [Complex, Rational, Float, Integer, BigDecimal]</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<h2>Использование в условиях мультиприсвоения</h2>
+
+<p>Теперь в условиях можно использовать множественное присвоение</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+</pre></td><td class='code'><pre><code class='ruby'><span class='line'><span class="c1"># 2.4</span>
+</span><span class='line'><span class="n">branch1</span> <span class="o">=</span>
+</span><span class='line'>  <span class="k">if</span> <span class="p">(</span><span class="n">foo</span><span class="p">,</span> <span class="n">bar</span> <span class="o">=</span> <span class="sx">%w[foo bar]</span><span class="p">)</span>
+</span><span class='line'>    <span class="s1">&#39;true&#39;</span>
+</span><span class='line'>  <span class="k">else</span>
+</span><span class='line'>    <span class="s1">&#39;false&#39;</span>
+</span><span class='line'>  <span class="k">end</span>
+</span><span class='line'>
+</span><span class='line'><span class="n">branch2</span> <span class="o">=</span>
+</span><span class='line'>  <span class="k">if</span> <span class="p">(</span><span class="n">foo</span><span class="p">,</span> <span class="n">bar</span> <span class="o">=</span> <span class="kp">nil</span><span class="p">)</span>
+</span><span class='line'>    <span class="s1">&#39;true&#39;</span>
+</span><span class='line'>  <span class="k">else</span>
+</span><span class='line'>    <span class="s1">&#39;false&#39;</span>
+</span><span class='line'>  <span class="k">end</span>
+</span><span class='line'>
+</span><span class='line'><span class="n">branch1</span> <span class="c1"># =&gt; &quot;true&quot;</span>
+</span><span class='line'><span class="n">branch2</span> <span class="c1"># =&gt; &quot;false&quot;</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<h2>Заключение</h2>
+
+<p>Неплохие добавочки в язык, точно знаю что использовал бы <code>transform_values</code>, недавно был случай когда нужно было проверить
+папку на наличие в ней файлов, здесь бы пригодился метод <code>empty?</code>. Вижу применение для <code>named_captures</code>. Остальное также может
+пригодиться, но лично для меня реже. Помимо добавления функционала были улучшения производительности. Но это уже совсем другая
+история. На этом все. Подписывайтесь на <a href="https://www.youtube.com/c/gururubyru">канал</a>, скоро выйдет новая порция уроков. Добавляйте в закладки</p>
+
+<h2>Ссылки к статье</h2>
+
+<ul>
+<li><a href="https://www.ruby-lang.org/en/news/2016/09/08/ruby-2-4-0-preview2-released/">Релиз Ruby 2.4</a></li>
+<li><a href="https://github.com/pry/pry">Gem <code>pry</code></a></li>
+</ul>
+
+]]></content>
+  </entry>
   
   <entry>
     <title type="html"><![CDATA[В чем разница между Load и Require, Include и Extend]]></title>
