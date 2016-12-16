@@ -4,7 +4,7 @@
   <title><![CDATA[Category: Ruby | Gururuby.ru | Блог Ruby-разработчика]]></title>
   <link href="http://gururuby.ru/blog/categories/ruby/atom.xml" rel="self"/>
   <link href="http://gururuby.ru/"/>
-  <updated>2016-12-16T01:07:22+03:00</updated>
+  <updated>2016-12-16T09:26:06+03:00</updated>
   <id>http://gururuby.ru/</id>
   <author>
     <name><![CDATA[Gururuby.ru]]></name>
@@ -40,8 +40,7 @@
 
 <p>Напомню что метод gets используется для получения пользовательского ввода в вашем скрипте. Вы наверняка использовали его
 в задачках по Ruby. Так вот, если пользователь вводил какие либо данные, к вам в результате приходила строка с переносом <code>\n</code>
-Чтобы ее убрать использовался метода chomp, который убирал ненужные данные. Теперь же мы можем указать опцию в методе gets
-и можно не использовать этот метод у результата.</p>
+Чтобы его убрать использовался метод chomp. Теперь мы можем указать опцию <code>chomp</code> в методе gets</p>
 
 <pre><code class="ruby"># 2.3
 input_string = gets
