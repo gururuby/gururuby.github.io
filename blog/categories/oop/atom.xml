@@ -4,7 +4,7 @@
   <title><![CDATA[Category: ООП | Gururuby.ru | Блог Ruby-разработчика]]></title>
   <link href="http://gururuby.ru/blog/categories/oop/atom.xml" rel="self"/>
   <link href="http://gururuby.ru/"/>
-  <updated>2016-12-16T09:26:06+03:00</updated>
+  <updated>2016-12-25T10:48:17+03:00</updated>
   <id>http://gururuby.ru/</id>
   <author>
     <name><![CDATA[Gururuby.ru]]></name>
@@ -20,7 +20,7 @@
     <id>http://gururuby.ru/blog/2016/02/24/lesson-1-oop-and-ruby</id>
     <content type="html"><![CDATA[<p>Серия видеоуроков по Ruby, решил начать с объяснения своими словами ООП, в конце немного о Ruby.</p>
 
-<iframe width="770" height="320" src="https://www.youtube.com/embed/mICGqoexnls" frameborder="0" allowfullscreen></iframe>
+<iframe width="770" height="500" src="https://www.youtube.com/embed/mICGqoexnls" frameborder="0" allowfullscreen></iframe>
 
 ]]></content>
   </entry>

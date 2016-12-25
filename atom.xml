@@ -4,7 +4,7 @@
   <title><![CDATA[Gururuby.ru | Блог Ruby-разработчика]]></title>
   <link href="http://gururuby.ru/atom.xml" rel="self"/>
   <link href="http://gururuby.ru/"/>
-  <updated>2016-12-16T09:26:06+03:00</updated>
+  <updated>2016-12-25T10:48:17+03:00</updated>
   <id>http://gururuby.ru/</id>
   <author>
     <name><![CDATA[Gururuby.ru]]></name>
@@ -12,6 +12,24 @@
   </author>
   <generator uri="http://octopress.org/">Octopress</generator>
 
+  
+  <entry>
+    <title type="html"><![CDATA[Демонический Linux]]></title>
+    <link href="http://gururuby.ru/blog/2016/12/25/new-linux-lessons/"/>
+    <updated>2016-12-25T10:42:46+03:00</updated>
+    <id>http://gururuby.ru/blog/2016/12/25/new-linux-lessons</id>
+    <content type="html"><![CDATA[<iframe width="770" height="500" src="https://www.youtube.com/embed/K4UlNeCYrSs" frameborder="0" allowfullscreen></iframe>
+
+
+<p>Всем привет!</p>
+
+<p>Прошло уже около года с момента опубликования крайнего видео на моем канале. За все это время на канал подписывались люди, были запросы на новые уроки. Это очень приятно, что вы заинтересованы в том что я делаю, и я решил что стоит продолжить эту затею.
+Сейчас в курсе по Ruby обсуждается работа с Linux и так как эта тема все-таки выпадает из обучения языку программирования, я решил что было бы правильнее вынести это в отдельный курс, который назвается Демонический Linux.
+Я запишу несколько уроков в этом курсе, которые необходимы для продолжения обучения Ruby, и дальше продолжу снимать уроки по Ruby. Спасибо за поддержку, за ваши пальцы вверх, чем вас больше тем выше моя мотивация.</p>
+
+<p>Подписывайтесь <a href="https://www.youtube.com/c/gururubyru">на канал</a> и до встречи )</p>
+]]></content>
+  </entry>
   
   <entry>
     <title type="html"><![CDATA[Что нового в Ruby 2.4?]]></title>
@@ -699,7 +717,7 @@ Enumerable</p>
     <content type="html"><![CDATA[<p>В этом уроке, о том какое окружение выбрать, какую операционную систему использовать и почему, а также установим Ubuntu 14.04
 с помощью VirtualBox</p>
 
-<iframe width="770" height="320" src="https://www.youtube.com/embed/C03WnMS5YcM" frameborder="0" allowfullscreen></iframe>
+<iframe width="770" height="500" src="https://www.youtube.com/embed/C03WnMS5YcM" frameborder="0" allowfullscreen></iframe>
 
 ]]></content>
   </entry>
@@ -711,7 +729,7 @@ Enumerable</p>
     <id>http://gururuby.ru/blog/2016/02/24/lesson-1-oop-and-ruby</id>
     <content type="html"><![CDATA[<p>Серия видеоуроков по Ruby, решил начать с объяснения своими словами ООП, в конце немного о Ruby.</p>
 
-<iframe width="770" height="320" src="https://www.youtube.com/embed/mICGqoexnls" frameborder="0" allowfullscreen></iframe>
+<iframe width="770" height="500" src="https://www.youtube.com/embed/mICGqoexnls" frameborder="0" allowfullscreen></iframe>
 
 ]]></content>
   </entry>
